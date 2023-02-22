@@ -5,7 +5,7 @@ namespace TargetDetector
 
 Cluster::Cluster()
 {
-	//
+	updated__ = false;
 }
 
 Cluster::Cluster(const double & __px, const double & __py)
@@ -18,14 +18,15 @@ Cluster::~Cluster()
 	//
 }
 
-void Cluster::addPoint(const double & __point_x, const double & __point_y)
-{
-	points__.push_back(Eigen::Vector3d(__point_x, __point_y, 1.0)); //stored in homogeneous form
-}
-
 const unsigned int Cluster::size()
 {
 	return points__.size();
+}
+
+const Eigen::Vector3d & Cluster::centroid() const
+{
+	if ( !updated__ ) compute();
+	return centroid__;
 }
 
 void Cluster::compute()
@@ -41,11 +42,19 @@ void Cluster::compute()
 		yy += points__[ii].y();
 	}
 	centroid__ << xx/points__.size(), yy/points__.size(), 1.0;
+
+	updated__ = true;
 }
 
-const Eigen::Vector3d & Cluster::centroid() const
+bool evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_threshold)
 {
-	return centroid__;
+
+}
+
+void Cluster::addPoint(const double & __point_x, const double & __point_y)
+{
+	points__.push_back(Eigen::Vector3d(__point_x, __point_y, 1.0)); //stored in homogeneous form
+	updated__ = false;
 }
 
 double Cluster::distance(const Cluster & __cluster) const
@@ -69,6 +78,7 @@ void Cluster::print() const
 	std::cout << "Cluster" << std::endl;
 	std::cout << "\t Size: " << points__.size() << std::endl;
 	std::cout << "\t Centroid: " << centroid__.transpose() << std::endl;
+	std::cout << "\t Updated: " << (unsigned int)updated__ << std::endl;
 }
 
 } //namespace

@@ -22,25 +22,28 @@ class Cluster
 		// centroid of the cluster in homogeneous coordinates
 		Eigen::Vector3d centroid__;
 
+		// flag if the cluster parameters such as centroid have been updated
+		bool updated__; 
+
 	public:
-		//constructors
 		Cluster();
 		Cluster(const double & __px, const double & __py);
-
-		//destructor
 		~Cluster();
-
-		//adds a new supporting laser point to the segment. Input arguments are the coordinates x,y of the point
-		void addPoint(const double & __point_x, const double & __point_y);
 
 		// returns cluster size (number of points)
 		const unsigned int size();
 
+		// Return const ref to centroid__
+		const Eigen::Vector3d & centroid() const;
+
 		// Compute cluster parameters
 		void compute();
 
-		// Return const ref to centroid__
-		const Eigen::Vector3d & centroid() const;
+		// Evaluate if a point may be member of this cluster
+		bool evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_threshold);
+
+		//adds a new supporting laser point to the segment. Input arguments are the coordinates x,y of the point
+		void addPoint(const double & __point_x, const double & __point_y);
 
 		// Return euclidean distance from this centroid to argument's centroid
 		double distance(const Cluster & __cluster) const;
