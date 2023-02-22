@@ -48,7 +48,14 @@ void Cluster::compute()
 
 bool evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_threshold)
 {
-
+	for (unsigned int ii=0; ii<points__.size(); ii++)
+	{
+		if ( (points__[ii] - __point).squaredNorm() < __dist_threshold*__dist_threshold )
+		{
+			return true;
+		}
+	}
+	return false; 
 }
 
 void Cluster::addPoint(const double & __point_x, const double & __point_y)
