@@ -28,8 +28,9 @@ class DetectorBase
 
 		// detect method only defines output arguments. Input data depending on the class specialization
 		virtual bool detect(
-			std::vector<Eigen::Vector3d> & __positions,
-			std::vector<Eigen::Quaterniond> & __orientations,
+			std::vector<Eigen::Vector3d> & __key_points, // key points for the detector, useful for visualization
+			std::vector<Eigen::Vector3d> & __positions, // origin of marker frames
+			std::vector<Eigen::Quaterniond> & __orientations, // orientation of marker frames
 		 	std::vector<double> & __confidences) = 0;
 };
 
