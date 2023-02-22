@@ -13,11 +13,13 @@ class MarkerReflector : public DetectorBase
 {
 	protected:
 		// data
-		std::vector<Eigen::Vector3d> rpoints__; //points with positive reflectance, assumed ordered as given by the lidar
-		std::vector<TargetDetector::Cluster> clusters__; // clusters of rpoints, according distance
+		std::vector<Eigen::Vector3d> rpoints__; //points with positive reflectance, wrt the platform frame. Ordering not assumed.
+		std::vector<TargetDetector::Cluster> clusters__; // clusters of rpoints
 
 		// parameters
 		clustering_distance__;
+		reflector_distance__;
+		distance_tolerance__;
 
 	public:
 		MarkerReflector();
@@ -25,6 +27,7 @@ class MarkerReflector : public DetectorBase
 		bool init(const std::map<std::string, std::string> & __params);
 		void resetData(); // clears both rpoints__ and clusters__
 		bool detect(
+			std::vector<Eigen::Vector3d> & __key_points,
 			std::vector<Eigen::Vector3d> & __positions,
 			std::vector<Eigen::Quaterniond> & __orientations,
 		 	std::vector<double> & __confidences);
