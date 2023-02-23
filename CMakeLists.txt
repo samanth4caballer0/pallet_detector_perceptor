@@ -13,7 +13,16 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	sensor_msgs
 	visualization_msgs
-	sick_safetyscanners
+#	sick_safetyscanners
+)
+
+add_action_files(
+	DIRECTORY action
+	FILES Detect.action
+)
+
+generate_messages(
+	DEPENDENCIES actionlib_msgs
 )
 
 catkin_package(CATKIN_DEPENDS
@@ -22,39 +31,31 @@ catkin_package(CATKIN_DEPENDS
 	geometry_msgs
 	sensor_msgs
 	visualization_msgs
-	sick_safetyscanners
+#	sick_safetyscanners
 )
 
 ###########
 ## Build ##
 ###########
 
-include_directories(include
+include_directories(
+	include
 	${catkin_INCLUDE_DIRS}
 )
 
-##  Library
-add_library(${PROJECT_NAME}
-	src/marker_reflector/cluster.cpp
-	src/marker_reflector/marker_reflector.cpp
-)
-#target_link_libraries(${PROJECT_NAME}
-#	xxxxx
-#)
-
 ## ROS node
 add_executable(${PROJECT_NAME}_node
-	src/target_detector.cpp
+	src/marker_reflector/cluster.cpp
+	src/marker_reflector/marker_reflector.cpp
+	src/target_detector_node.cpp
 	src/main.cpp
 )
 add_dependencies(${PROJECT_NAME}_node
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
-	${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}_node
 	${catkin_LIBRARIES}
-	${PROJECT_NAME}
 )
 
 
@@ -63,7 +64,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #############
 
 install(
-	TARGETS ${PROJECT_NAME}	${PROJECT_NAME}_node
+	TARGETS ${PROJECT_NAME}_node
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

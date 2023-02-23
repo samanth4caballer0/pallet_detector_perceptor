@@ -23,7 +23,7 @@ class Cluster
 		Eigen::Vector3d centroid__;
 
 		// flag if the cluster parameters such as centroid have been updated
-		bool updated__; 
+		bool updated__;
 
 	public:
 		Cluster();
@@ -34,7 +34,7 @@ class Cluster
 		const unsigned int size();
 
 		// Return const ref to centroid__
-		const Eigen::Vector3d & centroid() const;
+		const Eigen::Vector3d & centroid();
 
 		// Compute cluster parameters
 		void compute();
@@ -46,10 +46,10 @@ class Cluster
 		void addPoint(const double & __point_x, const double & __point_y);
 
 		// Return euclidean distance from this centroid to argument's centroid
-		double distance(const Cluster & __cluster) const;
+		double distance(Cluster & __cluster);
 
 		// Check if distance from this to __cluster is equal to __dist argument with __epsilon tolerance
-		bool checkDistance( const Cluster & __cluster, double __dist,	double __epsilon) const;
+		bool checkDistance( Cluster & __cluster, double __dist,	double __epsilon);
 
 		//print segment info
 		void print() const;

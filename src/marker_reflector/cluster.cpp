@@ -23,7 +23,7 @@ const unsigned int Cluster::size()
 	return points__.size();
 }
 
-const Eigen::Vector3d & Cluster::centroid() const
+const Eigen::Vector3d & Cluster::centroid()
 {
 	if ( !updated__ ) compute();
 	return centroid__;
@@ -46,7 +46,7 @@ void Cluster::compute()
 	updated__ = true;
 }
 
-bool evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_threshold)
+bool Cluster::evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_threshold)
 {
 	for (unsigned int ii=0; ii<points__.size(); ii++)
 	{
@@ -55,7 +55,7 @@ bool evaluatePoint(const Eigen::Vector3d & __point, const double & __dist_thresh
 			return true;
 		}
 	}
-	return false; 
+	return false;
 }
 
 void Cluster::addPoint(const double & __point_x, const double & __point_y)
@@ -64,15 +64,15 @@ void Cluster::addPoint(const double & __point_x, const double & __point_y)
 	updated__ = false;
 }
 
-double Cluster::distance(const Cluster & __cluster) const
+double Cluster::distance(Cluster & __cluster)
 {
 	return sqrt(
-		( centroid__.x() - __cluster.centroid().x() ) * ( centroid__.x() - __cluster.centroid().x() )
+		( centroid().x() - __cluster.centroid().x() ) * ( centroid().x() - __cluster.centroid().x() )
 		+
-		( centroid__.y() - __cluster.centroid().y() ) * ( centroid__.y() - __cluster.centroid().y() ) );
+		( centroid().y() - __cluster.centroid().y() ) * ( centroid().y() - __cluster.centroid().y() ) );
 }
 
-bool Cluster::checkDistance( const Cluster & __cluster, double __dist, double __epsilon) const
+bool Cluster::checkDistance(Cluster & __cluster, double __dist, double __epsilon)
 {
 	double dd = std::fabs( distance(__cluster) - __dist );
 	if ( dd < __epsilon ) return true;

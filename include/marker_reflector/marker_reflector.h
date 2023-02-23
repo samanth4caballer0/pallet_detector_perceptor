@@ -1,9 +1,9 @@
-#ifndef TARGET_DETECTOR_CLUSTER_H
-#define TARGET_DETECTOR_CLUSTER_H
+#ifndef TARGET_DETECTOR_MARKER_REFLECTOR_H
+#define TARGET_DETECTOR_MARKER_REFLECTOR_H
 
 
 // target_detector library
-#include "marker_reflector/detector_base.h"
+#include "target_detector/detector_base.h"
 #include "marker_reflector/cluster.h"
 
 namespace TargetDetector
@@ -14,12 +14,12 @@ class MarkerReflector : public DetectorBase
 	protected:
 		// data
 		std::vector<Eigen::Vector3d> rpoints__; //points with positive reflectance, wrt the platform frame. Ordering not assumed.
-		std::vector<TargetDetector::Cluster> clusters__; // clusters of rpoints
+		std::vector<Cluster> clusters__; // clusters of rpoints
 
 		// parameters
-		clustering_distance__;
-		reflector_distance__;
-		distance_tolerance__;
+		double clustering_distance__;
+		double reflector_distance__;
+		double reflector_distance_tolerance__;
 
 	public:
 		MarkerReflector();

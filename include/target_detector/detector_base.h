@@ -3,6 +3,8 @@
 
 //std
 #include <iostream>
+#include <vector>
+#include <string>
 #include <map>
 
 //Eigen
@@ -17,14 +19,14 @@ class DetectorBase
 	protected:
 
 	public:
-		DetectorBase();
-		~DetectorBase();
+		DetectorBase(){};
+		~DetectorBase(){};
 
 		// initialization with custom parameters, depending on each class specialization
 		virtual bool init(const std::map<std::string, std::string> & __params) = 0;
 
 		// clears input sensory data stored in class members, to start a new detection
-		virtual void resetData();
+		virtual void resetData() = 0;
 
 		// detect method only defines output arguments. Input data depending on the class specialization
 		virtual bool detect(

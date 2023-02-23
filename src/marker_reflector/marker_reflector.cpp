@@ -15,9 +15,9 @@ MarkerReflector::~MarkerReflector()
 
 bool MarkerReflector::init(const std::map<std::string, std::string> & __params)
 {
-	clustering_distance__ = __params.at("clustering_distance");
-	reflector_distance__ = __params.at("reflector_distance");
-	distance_tolerance__ = __params.at("distance_tolerance");
+	clustering_distance__ = std::stod(__params.at("clustering_distance"));
+	reflector_distance__ = std::stod(__params.at("reflector_distance"));
+	reflector_distance_tolerance__ = std::stod(__params.at("reflector_distance_tolerance"));
 	return true;
 }
 
@@ -54,10 +54,10 @@ bool MarkerReflector::detect(
 	}
 
 	// Prune spurious clusters (if only 1 point support)
-	for(std::std::vector<TargetDetector::Cluster>::iterator it = clusters__.begin(); it != clusters__.end()) // it increment inside the loop
+	for( std::vector<TargetDetector::Cluster>::iterator it = clusters__.begin(); it != clusters__.end(); ) // it increment inside the loop
 	{
 		if ( it->size() < 2 )
-			it = clusters__.erase(cluster_set.begin()+ii);
+			it = clusters__.erase(it);
 		else
 			it ++;
 	}
@@ -88,7 +88,7 @@ bool MarkerReflector::detect(
 	{
 		for (unsigned int jj = ii+1; jj<clusters__.size(); jj++)
 		{
-			if ( std::abs(d_matrix(ii,jj) - reflector_distance__) < distance_tolerance__ )
+			if ( std::abs(d_matrix(ii,jj) - reflector_distance__) < reflector_distance_tolerance__ )
 			{
 				candidates_ij.push_back(std::pair<unsigned int, unsigned int>());
 				candidates_ij.back().first = ii;
@@ -98,21 +98,41 @@ bool MarkerReflector::detect(
 	}
 
 	// Compute marker frames for each candidate pair
-	Eigen::Vector3d vx,vy;
-	Eigen::Vector3d vz(0,0,1);
+	Eigen::Vector3d vx,vy; // frame vectors x and y
+	Eigen::Vector3d vz(0,0,1); // frame vector z
+	Eigen::Vector3d mp; //vector from marker origin to platform origin
+	double dot_p;
+	Eigen::Quaterniond qt;
+	double angle_z;
+	qt.x() = 0.0;
+	qt.y() = 0.0;
 	for( const auto & it : candidates_ij )
 	{
-		vy = clusters__[candidates_ij.first].centroid() - clusters__[candidates_ij.second].centroid();
+		vy = clusters__[it.first].centroid() - clusters__[it.second].centroid();
 		vx = vy.cross(vz);
-		
+		mp = clusters__[it.first].centroid();
+		mp.z() = 0;
+		dot_p = vx.dot(mp);
+		if ( dot_p < 0.0 ) // check frame alignement
+		{
+			vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
+			vx = vy.cross(vz);
+			mp = clusters__[it.second].centroid();
+		}
+		angle_z = atan2(vx.y(),vx.x());
+		qt.z() = sin(angle_z/2.0);
+		qt.w() = cos(angle_z/2.0);
+		__positions.push_back(mp);
+		__orientations.push_back(qt);
+		__confidences.push_back(1.0);
 	}
 
 	return true;
-
-
 }
 
 void MarkerReflector::addReflectorPoint(const double & __x, const double & __y)
 {
 	rpoints__.push_back(Eigen::Vector3d(__x, __y, 1.0));
 }
+
+} // end of namespace
