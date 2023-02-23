@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<!-- Input arguments -->
+	<arg name="namespace" default="target_detector" />
+
+	<!-- battery BMS -->
+	<group ns="$(arg namespace)">
+		<rosparam file="$(find target_detector)/config/lidar_reflector.yaml" command="load"/>
+		<node
+			pkg="target_detector"
+			type="target_detector_node"
+			name="target_detector"
+			output="screen" >
+		</node>
+	</group>
+
+</launch>
