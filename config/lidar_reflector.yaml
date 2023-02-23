@@ -1,0 +1,5 @@
+type: 0 # DETECTOR_MARKER_REFLECTOR=0, DETECTOR_STD_PALLET=1, DETECTOR_QR=2
+lidar_frames: ['front_lidar', 'back_lidar']
+clustering_distance: 0.03
+reflector_distance: 1.05
+distance_tolerance: 0.03
