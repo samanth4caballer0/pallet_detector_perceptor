@@ -130,7 +130,10 @@ bool MarkerReflector::detect(
 	return true;
 }
 
-void MarkerReflector::addReflectorPoint(const double & __x, const double & __y)
+void MarkerReflector::addPointData(
+	const double & __x,
+	const double & __y,
+	const double & __z)
 {
 	rpoints__.push_back(Eigen::Vector3d(__x, __y, 1.0));
 }

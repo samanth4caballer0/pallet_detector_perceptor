@@ -34,6 +34,15 @@ class DetectorBase
 			std::vector<Eigen::Vector3d> & __positions, // origin of marker frames
 			std::vector<Eigen::Quaterniond> & __orientations, // orientation of marker frames
 		 	std::vector<double> & __confidences) = 0;
+
+		// adds a raw data to be processed
+		virtual void addPointData(
+			const double & __x,
+			const double & __y,
+			const double & __z) {};
+		//virtual void addCloudData(...) {};
+		//virtual void addImageData(...) {};
+
 };
 
 } //namespace

@@ -31,7 +31,10 @@ class MarkerReflector : public DetectorBase
 			std::vector<Eigen::Vector3d> & __positions,
 			std::vector<Eigen::Quaterniond> & __orientations,
 		 	std::vector<double> & __confidences);
-		void addReflectorPoint(const double & __x, const double & __y); //adds a point to rpoints__
+		void addPointData(
+			const double & __x,
+			const double & __y,
+			const double & __z);
 };
 
 } //namespace

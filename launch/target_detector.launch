@@ -8,6 +8,8 @@
 	<!-- battery BMS -->
 	<group ns="$(arg namespace)">
 		<rosparam file="$(find target_detector)/config/lidar_reflector.yaml" command="load"/>
+		<remap from="laser_input0" to="/sm_moontech_1/devices/lidar_front/scan"/>
+		<remap from="laser_input1" to="/sm_moontech_1/devices/lidar_back/scan"/>
 		<node
 			pkg="target_detector"
 			type="target_detector_node"

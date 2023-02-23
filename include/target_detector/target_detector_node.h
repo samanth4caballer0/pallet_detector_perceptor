@@ -43,7 +43,7 @@ class TargetDetectorNode
 
 		//publishers
 		ros::Publisher detector_publisher__;
-		ros::Publisher viz_publisher__;
+		ros::Publisher viz_marker_publisher__;
 
 		//Transfrom listener to get marker frame and update ROI
 		tf::TransformListener tfl__;
@@ -76,7 +76,7 @@ class TargetDetectorNode
 		// publish visualization markers for debugging purposes
 		// __red_color must be in [0,1]
 		void publishMarkers(
-			const std::vector<Cluster> & __clusters,
+			const std::vector<Eigen::Vector3d> & __points,
 			const double & __red_color,
 			const std::string __marker_namespace) const;
 };
