@@ -187,7 +187,7 @@ void TargetDetectorNode::publishMarkers(
 
 	viz_markers.markers.resize(1);
 	viz_markers.markers[0].header.stamp = ros::Time::now();
-	viz_markers.markers[0].header.frame_id = sensor_frame__;
+	viz_markers.markers[0].header.frame_id = "platform";
 	viz_markers.markers[0].ns = __marker_namespace;
 	viz_markers.markers[0].action = visualization_msgs::Marker::ADD;
 	viz_markers.markers[0].lifetime = ros::Duration(1.0);
