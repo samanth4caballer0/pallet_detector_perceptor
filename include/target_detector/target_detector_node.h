@@ -8,10 +8,13 @@
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
 #include <sensor_msgs/LaserScan.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <sick_safetyscanners/ExtendedLaserScanMsg.h>
+
+//Eigen
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
 
 //this project
 #include "marker_reflector/cluster.h"
@@ -45,14 +48,15 @@ class TargetDetectorNode
 		ros::Publisher detector_publisher__;
 		ros::Publisher viz_marker_publisher__;
 
-		//Transfrom listener to get marker frame and update ROI
+		//Transfrom listener to get transform from platform to sensor_frame__
 		tf::TransformListener tfl__;
-		tf::TransformBroadcaster tfb__;
+
+		// 2D sensor frame wrt the platform frame
+		Eigen::Isometry2d T_platform2sensor__;
 
 		//detector parameters
 		std::map<std::string, std::string> lidar_frame_to_topic_map__;
 		std::string sensor_frame__; //lidar frame in which detection is referenced
-		std::string marker_frame__; // updated marker frame (required for ROI update)
 		bool verbose__;
 
 	public:

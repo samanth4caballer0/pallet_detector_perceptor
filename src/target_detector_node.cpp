@@ -95,16 +95,34 @@ void TargetDetectorNode::detectCallback(
 	// get sensor frame
 	sensor_frame__ = __goal->sensor_frame;
 
-	// get transform from platform to sensor frame
-	// TO DO
-
-	// subscribe to requested lidar
+	// check if sensor frame was registered at lidar_frame_to_topic_map__
 	if ( lidar_frame_to_topic_map__.find(sensor_frame__) == lidar_frame_to_topic_map__.end() )
 	{
-		ROS_WARN("TargetDetectorNode: Unknown lidar frame");
+		ROS_WARN("Unknown lidar frame");
 		detect_as_ptr__->setAborted(detect_result, "Unknown lidar frame");
 		return;
 	}
+
+	// get transform from platform to sensor frame
+	ros::Time now = ros::Time::now();
+	tf::StampedTransform Tstmp;
+	if ( tfl__.waitForTransform("platform", sensor_frame__, now, ros::Duration(1.)) )
+	{
+		//look up for transform at tf tree and set the homogeneous matrix
+		tfl__.lookupTransform("platform", sensor_frame__, now, Tstmp);
+		T_platform2sensor__.matrix() <<
+			Tstmp.getBasis().getRow(0).x(), Tstmp.getBasis().getRow(0).y(), Tstmp.getOrigin().x(),
+			Tstmp.getBasis().getRow(1).x(), Tstmp.getBasis().getRow(1).y(), Tstmp.getOrigin().y(),
+			0, 0, 1.0;
+	}
+	else //some error occurred
+	{
+		ROS_WARN_STREAM("Required Transform from platform to "<< sensor_frame__ << " not found");
+		detect_as_ptr__->setAborted(detect_result, "Unknown platform to sensor transform");
+		return;
+	}
+
+	// subscribe to requested lidar
 	std::string lidar_topic = lidar_frame_to_topic_map__[sensor_frame__];
 	lidar_reflector_subscriber__ = nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::lidarReflectorCallback, this);
 
@@ -115,14 +133,15 @@ void TargetDetectorNode::detectCallback(
 		// check for external cancelation
 		if ( detect_as_ptr__->isPreemptRequested() )
 		{
-			detect_as_ptr__->setPreempted(detect_result, "Detection cancelled");
 			lidar_reflector_subscriber__.shutdown();
+			detect_as_ptr__->setPreempted(detect_result, "Detection cancelled");
 			return;
 		}
 
 		// relax
 		loop_rate.sleep();
 	}
+
 
 }
 
@@ -131,16 +150,18 @@ void TargetDetectorNode::lidarReflectorCallback(
 {
 	// fills data to detector
 	std::cout << "Lidar Callback" << std::endl;
-	double px, py, angle;
+	double angle;
+	Eigen::Vector2d p_sensor, p_platform; //point wrt sensor, p wrt platform
 	detector__->resetData();
 	for (unsigned int ii=0; ii<__scan.reflektor_status.size(); ii++)
 	{
 		if ( __scan.reflektor_status[ii] )
 		{
 			angle = __scan.laser_scan.angle_min + ii*__scan.laser_scan.angle_increment;
-			px = __scan.laser_scan.ranges[ii]*cos(angle);
-			py = __scan.laser_scan.ranges[ii]*sin(angle);
-			detector__->addPointData(px,py,1.0);
+			p_sensor.x() = __scan.laser_scan.ranges[ii]*cos(angle);
+			p_sensor.y() = __scan.laser_scan.ranges[ii]*sin(angle);
+			p_platform = T_platform2sensor__*p_sensor;
+			detector__->addPointData(p_platform.x(),p_platform.y(),1.0);
 		}
 	}
 
