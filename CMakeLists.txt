@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	sensor_msgs
 	visualization_msgs
-#	sick_safetyscanners
+	sick_safetyscanners
 )
 
 add_action_files(
@@ -31,7 +31,7 @@ catkin_package(CATKIN_DEPENDS
 	geometry_msgs
 	sensor_msgs
 	visualization_msgs
-#	sick_safetyscanners
+	sick_safetyscanners
 )
 
 ###########

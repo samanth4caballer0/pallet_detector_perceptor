@@ -11,7 +11,7 @@
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/LaserScan.h>
 #include <visualization_msgs/MarkerArray.h>
-//#include <sick_safetyscanners/ExtendedLaserScanMsg.h>
+#include <sick_safetyscanners/ExtendedLaserScanMsg.h>
 
 //this project
 #include "marker_reflector/cluster.h"
@@ -39,7 +39,7 @@ class TargetDetectorNode
 		std::shared_ptr<actionlib::SimpleActionServer<target_detector::DetectAction>> detect_as_ptr__;
 
 		//subscribers
-		ros::Subscriber lidar_subscriber__;
+		ros::Subscriber lidar_reflector_subscriber__;
 
 		//publishers
 		ros::Publisher detector_publisher__;
@@ -71,7 +71,7 @@ class TargetDetectorNode
 
 		// Laser scan callback. Detection starts here
 		//void lidarCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
-		void lidarCallback(const sensor_msgs::LaserScan & __scan);
+		void lidarReflectorCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
 
 		// publish visualization markers for debugging purposes
 		// __red_color must be in [0,1]

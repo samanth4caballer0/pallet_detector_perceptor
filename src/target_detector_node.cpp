@@ -106,7 +106,7 @@ void TargetDetectorNode::detectCallback(
 		return;
 	}
 	std::string lidar_topic = lidar_frame_to_topic_map__[sensor_frame__];
-	lidar_subscriber__ = nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::lidarCallback, this);
+	lidar_reflector_subscriber__ = nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::lidarReflectorCallback, this);
 
 	// ACTION LOOP, while goal not reached, or timeout
 	ros::Rate loop_rate(10);
@@ -116,7 +116,7 @@ void TargetDetectorNode::detectCallback(
 		if ( detect_as_ptr__->isPreemptRequested() )
 		{
 			detect_as_ptr__->setPreempted(detect_result, "Detection cancelled");
-			lidar_subscriber__.shutdown();
+			lidar_reflector_subscriber__.shutdown();
 			return;
 		}
 
@@ -126,20 +126,20 @@ void TargetDetectorNode::detectCallback(
 
 }
 
-void TargetDetectorNode::lidarCallback(
-	const sensor_msgs::LaserScan & __scan)
+void TargetDetectorNode::lidarReflectorCallback(
+	const sick_safetyscanners::ExtendedLaserScanMsg & __scan)
 {
 	// fills data to detector
 	std::cout << "Lidar Callback" << std::endl;
 	double px, py, angle;
 	detector__->resetData();
-	for(unsigned int ii=0; ii<__scan.intensities.size(); ii++)
+	for (unsigned int ii=0; ii<__scan.reflektor_status.size(); ii++)
 	{
-		if (__scan.intensities[ii] == 255)
+		if ( __scan.reflektor_status[ii] )
 		{
-			angle = __scan.angle_min + ii*__scan.angle_increment;
-			px = __scan.ranges[ii]*cos(angle);
-			py = __scan.ranges[ii]*sin(angle);
+			angle = __scan.laser_scan.angle_min + ii*__scan.laser_scan.angle_increment;
+			px = __scan.laser_scan.ranges[ii]*cos(angle);
+			py = __scan.laser_scan.ranges[ii]*sin(angle);
 			detector__->addPointData(px,py,1.0);
 		}
 	}
@@ -150,7 +150,7 @@ void TargetDetectorNode::lidarCallback(
 	std::vector<Eigen::Quaterniond> orientations;
 	std::vector<double> confidences;
 	detector__->detect(key_points, positions, orientations, confidences);
-	std::cout << "key_points.size(): " << key_points.size() << std::endl; 
+	std::cout << "key_points.size(): " << key_points.size() << std::endl;
 
 	// publish markers
 	publishMarkers(key_points, 0.5, "target_detector");
