@@ -20,6 +20,7 @@
 #include "marker_reflector/cluster.h"
 #include "marker_reflector/marker_reflector.h"
 #include "target_detector/DetectAction.h"
+#include "target_detector/Detections.h"
 
 
 const int DETECTOR_MARKER_REFLECTOR = 1;

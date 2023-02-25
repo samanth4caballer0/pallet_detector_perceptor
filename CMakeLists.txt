@@ -16,13 +16,18 @@ find_package(catkin REQUIRED COMPONENTS
 	sick_safetyscanners
 )
 
+add_message_files(
+	DIRECTORY msg
+	FILES Detections.msg
+)
 add_action_files(
 	DIRECTORY action
 	FILES Detect.action
 )
-
 generate_messages(
-	DEPENDENCIES actionlib_msgs
+	DEPENDENCIES
+	actionlib_msgs
+	geometry_msgs
 )
 
 catkin_package(CATKIN_DEPENDS

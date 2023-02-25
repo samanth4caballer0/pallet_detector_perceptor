@@ -80,7 +80,8 @@ bool TargetDetectorNode::init()
 			false));
 	detect_as_ptr__->start();
 
-	// visualization markers
+	// Publishers
+	detector_publisher__ = nh__.advertise<target_detector::Detections>( "target_detections", 1, true );
 	viz_marker_publisher__ = nh__.advertise<visualization_msgs::MarkerArray>( "target_detector_markers", 1, true );
 
 	return true;
@@ -149,7 +150,7 @@ void TargetDetectorNode::lidarReflectorCallback(
 	const sick_safetyscanners::ExtendedLaserScanMsg & __scan)
 {
 	// fills data to detector
-	std::cout << "Lidar Callback" << std::endl;
+	//std::cout << "Lidar Callback" << std::endl;
 	double angle;
 	Eigen::Vector2d p_sensor, p_platform; //point wrt sensor, p wrt platform
 	detector__->resetData();
@@ -176,6 +177,22 @@ void TargetDetectorNode::lidarReflectorCallback(
 	// publish markers
 	publishMarkers(key_points, 0.5, "target_detector");
 
+	// publish detection frames
+	target_detector::Detections msg;
+	msg.header.stamp = __scan.laser_scan.header.stamp;
+	msg.header.frame_id = "platform";
+	msg.poses.resize(positions.size());
+	for (unsigned int ii=0; ii<positions.size(); ii++)
+	{
+		msg.poses[ii].position.x = positions[ii].x();
+		msg.poses[ii].position.y = positions[ii].y();
+		msg.poses[ii].position.z = positions[ii].z();
+		msg.poses[ii].orientation.x = orientations[ii].x();
+		msg.poses[ii].orientation.y = orientations[ii].y();
+		msg.poses[ii].orientation.z = orientations[ii].z();
+		msg.poses[ii].orientation.w = orientations[ii].w();
+	}
+	detector_publisher__.publish(msg);
 }
 
 void TargetDetectorNode::publishMarkers(

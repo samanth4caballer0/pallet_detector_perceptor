@@ -100,7 +100,7 @@ bool MarkerReflector::detect(
 	// Compute marker frames for each candidate pair
 	Eigen::Vector3d vx,vy; // frame vectors x and y
 	Eigen::Vector3d vz(0,0,1); // frame vector z
-	Eigen::Vector3d mp; //vector from marker origin to platform origin
+	Eigen::Vector3d mp; //vector from to platform origin to marker origin
 	double dot_p;
 	Eigen::Quaterniond qt;
 	double angle_z;
@@ -113,7 +113,7 @@ bool MarkerReflector::detect(
 		mp = clusters__[it.first].centroid();
 		mp.z() = 0;
 		dot_p = vx.dot(mp);
-		if ( dot_p < 0.0 ) // check frame alignement
+		if ( dot_p > 0.0 ) // check frame alignement
 		{
 			vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
 			vx = vy.cross(vz);
