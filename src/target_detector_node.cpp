@@ -150,16 +150,22 @@ void TargetDetectorNode::lidarReflectorCallback(
 {
 	// fills data to detector
 	//std::cout << "Lidar Callback" << std::endl;
-	double angle;
+	double calib_delta, range, angle;
 	Eigen::Vector2d p_sensor, p_platform; //point wrt sensor, p wrt platform
 	detector__->resetData();
 	for (unsigned int ii=0; ii<__scan.reflektor_status.size(); ii++)
 	{
 		if ( __scan.reflektor_status[ii] )
 		{
+			// apply simple calibration model for range in reflector points
+			if (__scan.laser_scan.ranges[ii] < 2.0 )
+				calib_delta = -0.01*__scan.laser_scan.ranges[ii]+0.02;
+			else
+				calib_delta = 0;
+			range =  __scan.laser_scan.ranges[ii] + calib_delta;
 			angle = __scan.laser_scan.angle_min + ii*__scan.laser_scan.angle_increment;
-			p_sensor.x() = __scan.laser_scan.ranges[ii]*cos(angle);
-			p_sensor.y() = __scan.laser_scan.ranges[ii]*sin(angle);
+			p_sensor.x() = range*cos(angle);
+			p_sensor.y() = range*sin(angle);
 			p_platform = T_platform2sensor__*p_sensor;
 			detector__->addPointData(p_platform.x(),p_platform.y(),1.0);
 		}
