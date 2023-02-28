@@ -242,7 +242,7 @@ void TargetDetectorNode::publishMarkers(
 		viz_markers.markers[ii+1].ns = __marker_namespace;
 		viz_markers.markers[ii+1].action = visualization_msgs::Marker::ADD;
 		viz_markers.markers[ii+1].lifetime = ros::Duration(1.0);
-		viz_markers.markers[ii+1].id = 0;
+		viz_markers.markers[ii+1].id = ii+1;
 		viz_markers.markers[ii+1].type = visualization_msgs::Marker::ARROW;
 		viz_markers.markers[ii+1].pose.position.x = __positions[ii].x();
 		viz_markers.markers[ii+1].pose.position.y = __positions[ii].y();
