@@ -79,10 +79,10 @@ class TargetDetectorNode
 		void lidarReflectorCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
 
 		// publish visualization markers for debugging purposes
-		// __red_color must be in [0,1]
 		void publishMarkers(
-			const std::vector<Eigen::Vector3d> & __points,
-			const double & __red_color,
+			const std::vector<Eigen::Vector3d> & __key_points,
+			const std::vector<Eigen::Vector3d> & __positions,
+			const std::vector<Eigen::Quaterniond> & __orientations,
 			const std::string __marker_namespace) const;
 };
 

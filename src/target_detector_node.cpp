@@ -143,7 +143,6 @@ void TargetDetectorNode::detectCallback(
 		loop_rate.sleep();
 	}
 
-
 }
 
 void TargetDetectorNode::lidarReflectorCallback(
@@ -172,10 +171,9 @@ void TargetDetectorNode::lidarReflectorCallback(
 	std::vector<Eigen::Quaterniond> orientations;
 	std::vector<double> confidences;
 	detector__->detect(key_points, positions, orientations, confidences);
-	std::cout << "key_points.size(): " << key_points.size() << std::endl;
 
 	// publish markers
-	publishMarkers(key_points, 0.5, "target_detector");
+	publishMarkers(key_points, positions, orientations, "target_detector");
 
 	// publish detection frames
 	target_detector::Detections msg;
@@ -196,14 +194,18 @@ void TargetDetectorNode::lidarReflectorCallback(
 }
 
 void TargetDetectorNode::publishMarkers(
-	const std::vector<Eigen::Vector3d> & __points,
-	const double & __red_color,
+	const std::vector<Eigen::Vector3d> & __key_points,
+	const std::vector<Eigen::Vector3d> & __positions,
+	const std::vector<Eigen::Quaterniond> & __orientations,
 	const std::string __marker_namespace) const
 {
 	visualization_msgs::MarkerArray viz_markers;
 
-	viz_markers.markers.resize(1);
-	viz_markers.markers[0].header.stamp = ros::Time::now();
+	ros::Time now = ros::Time::now();
+	viz_markers.markers.resize(__positions.size()+1);
+
+	// spheres for __key_points
+	viz_markers.markers[0].header.stamp = now;
 	viz_markers.markers[0].header.frame_id = "platform";
 	viz_markers.markers[0].ns = __marker_namespace;
 	viz_markers.markers[0].action = visualization_msgs::Marker::ADD;
@@ -220,17 +222,44 @@ void TargetDetectorNode::publishMarkers(
 	viz_markers.markers[0].scale.x = 0.04;
 	viz_markers.markers[0].scale.y = 0.04;
 	viz_markers.markers[0].scale.z = 0.04;
-	viz_markers.markers[0].color.r = __red_color;
-	viz_markers.markers[0].color.g = 1.0-__red_color;
+	viz_markers.markers[0].color.r = 1.0;
+	viz_markers.markers[0].color.g = 0.0;
 	viz_markers.markers[0].color.b = 0.0;
 	viz_markers.markers[0].color.a = 1.0;
-	viz_markers.markers[0].points.resize(__points.size());
-	for ( unsigned int ii=0; ii<__points.size(); ii++ )
+	viz_markers.markers[0].points.resize(__key_points.size());
+	for ( unsigned int ii=0; ii<__key_points.size(); ii++ )
 	{
-		viz_markers.markers[0].points[ii].x = __points[ii].x();
-		viz_markers.markers[0].points[ii].y = __points[ii].y();
+		viz_markers.markers[0].points[ii].x = __key_points[ii].x();
+		viz_markers.markers[0].points[ii].y = __key_points[ii].y();
 		viz_markers.markers[0].points[ii].z = 0.0;
 	}
+
+	// arrows for positions/orientations
+	for ( unsigned int ii=0; ii<__positions.size(); ii++ )
+	{
+		viz_markers.markers[ii+1].header.stamp = now;
+		viz_markers.markers[ii+1].header.frame_id = "platform";
+		viz_markers.markers[ii+1].ns = __marker_namespace;
+		viz_markers.markers[ii+1].action = visualization_msgs::Marker::ADD;
+		viz_markers.markers[ii+1].lifetime = ros::Duration(1.0);
+		viz_markers.markers[ii+1].id = 0;
+		viz_markers.markers[ii+1].type = visualization_msgs::Marker::ARROW;
+		viz_markers.markers[ii+1].pose.position.x = __positions[ii].x();
+		viz_markers.markers[ii+1].pose.position.y = __positions[ii].y();
+		viz_markers.markers[ii+1].pose.position.z = __positions[ii].z();
+		viz_markers.markers[ii+1].pose.orientation.x = __orientations[ii].x();
+		viz_markers.markers[ii+1].pose.orientation.y = __orientations[ii].y();
+		viz_markers.markers[ii+1].pose.orientation.z = __orientations[ii].z();
+		viz_markers.markers[ii+1].pose.orientation.w = __orientations[ii].w();
+		viz_markers.markers[ii+1].scale.x = 0.1;
+		viz_markers.markers[ii+1].scale.y = 0.1;
+		viz_markers.markers[ii+1].scale.z = 0.1;
+		viz_markers.markers[ii+1].color.r = 1.0;
+		viz_markers.markers[ii+1].color.g = 0.0;
+		viz_markers.markers[ii+1].color.b = 0.0;
+		viz_markers.markers[ii+1].color.a = 1.0;
+	}
+
 	viz_marker_publisher__.publish(viz_markers);
 }
 
