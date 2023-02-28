@@ -110,20 +110,29 @@ bool MarkerReflector::detect(
 	double dot_p;
 	Eigen::Quaterniond qt;
 	double angle_z;
+	mp.z() = 0;
 	qt.x() = 0.0;
 	qt.y() = 0.0;
 	for( const auto & it : candidates_ij )
 	{
+		// marker origin, leftmost, from platform point of view
+		if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
+		{
+			mp = clusters__[it.first].centroid();
+		}
+		else
+		{
+			mp = clusters__[it.second].centroid();
+		}
+
+		// marker orientation towards the platform
 		vy = clusters__[it.first].centroid() - clusters__[it.second].centroid();
 		vx = vy.cross(vz);
-		mp = clusters__[it.first].centroid();
-		mp.z() = 0;
 		dot_p = vx.dot(mp);
 		if ( dot_p > 0.0 ) // check frame alignement
 		{
 			vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
 			vx = vy.cross(vz);
-			mp = clusters__[it.second].centroid();
 		}
 		angle_z = atan2(vx.y(),vx.x());
 		qt.z() = sin(angle_z/2.0);
