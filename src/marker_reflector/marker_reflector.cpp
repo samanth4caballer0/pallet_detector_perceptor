@@ -115,14 +115,20 @@ bool MarkerReflector::detect(
 	qt.y() = 0.0;
 	for( const auto & it : candidates_ij )
 	{
-		// marker origin, leftmost, from platform point of view
-		if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
+		// marker origi
+		if ( clusters__[it.first].centroid().x() > 0.0) //if x>0, origin at leftmost point, from platform point of view.
 		{
-			mp = clusters__[it.first].centroid();
+			if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
+				mp = clusters__[it.first].centroid();
+			else
+				mp = clusters__[it.second].centroid();
 		}
-		else
+		else //if x<0, origin at rightmost point, from platform point of view.
 		{
-			mp = clusters__[it.second].centroid();
+			if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
+				mp = clusters__[it.second].centroid();
+			else
+				mp = clusters__[it.first].centroid();
 		}
 
 		// marker orientation towards the platform
