@@ -38,19 +38,25 @@ bool MarkerReflector::detect(
 		return false;
 
 	// clustering
+	bool point_clustered;
 	clusters__.push_back( TargetDetector::Cluster(rpoints__[0].x(), rpoints__[0].y()) ); //at least one cluster with the firts point
 	for (unsigned int ii=1; ii<rpoints__.size(); ii++)
 	{
+		bool point_clustered = false
 		for (unsigned int jj=0; jj<clusters__.size(); jj++ )
 		{
 			if ( clusters__[jj].evaluatePoint(rpoints__[ii], clustering_distance__) )
 			{
 				clusters__.back().addPoint(rpoints__[ii].x(), rpoints__[ii].y());
+				point_clustered = true;
 				break;
 			}
 		}
-		clusters__.push_back(TargetDetector::Cluster());
-		clusters__.back().addPoint(rpoints__[ii].x(), rpoints__[ii].y());
+		if (!point_clustered)
+		{
+			clusters__.push_back(TargetDetector::Cluster());
+			clusters__.back().addPoint(rpoints__[ii].x(), rpoints__[ii].y());
+		}
 	}
 
 	// Prune spurious clusters (if only 1 point support)

@@ -39,7 +39,7 @@ class TargetDetectorNode
 		//ros node handle
 		ros::NodeHandle nh__;
 
-		//enabling/disabling tracking through service
+		// detector action
 		std::shared_ptr<actionlib::SimpleActionServer<target_detector::DetectAction>> detect_as_ptr__;
 
 		//subscribers
