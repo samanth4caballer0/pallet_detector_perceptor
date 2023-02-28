@@ -42,7 +42,7 @@ bool MarkerReflector::detect(
 	clusters__.push_back( TargetDetector::Cluster(rpoints__[0].x(), rpoints__[0].y()) ); //at least one cluster with the firts point
 	for (unsigned int ii=1; ii<rpoints__.size(); ii++)
 	{
-		bool point_clustered = false
+		bool point_clustered = false;
 		for (unsigned int jj=0; jj<clusters__.size(); jj++ )
 		{
 			if ( clusters__[jj].evaluatePoint(rpoints__[ii], clustering_distance__) )
