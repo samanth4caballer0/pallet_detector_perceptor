@@ -252,8 +252,8 @@ void TargetDetectorNode::publishMarkers(
 		viz_markers.markers[ii+1].pose.orientation.z = __orientations[ii].z();
 		viz_markers.markers[ii+1].pose.orientation.w = __orientations[ii].w();
 		viz_markers.markers[ii+1].scale.x = 0.1;
-		viz_markers.markers[ii+1].scale.y = 0.1;
-		viz_markers.markers[ii+1].scale.z = 0.1;
+		viz_markers.markers[ii+1].scale.y = 0.02;
+		viz_markers.markers[ii+1].scale.z = 0.02;
 		viz_markers.markers[ii+1].color.r = 1.0;
 		viz_markers.markers[ii+1].color.g = 0.0;
 		viz_markers.markers[ii+1].color.b = 0.0;
