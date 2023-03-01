@@ -3,7 +3,8 @@
 namespace TargetDetector
 {
 
-TargetDetectorNode::TargetDetectorNode()
+TargetDetectorNode::TargetDetectorNode() :
+	detector_state__(target_detector::DetectFeedback::STATE_DISABLED)
 {
 
 }
@@ -129,15 +130,22 @@ void TargetDetectorNode::detectCallback(
 
 	// ACTION LOOP, while goal not reached, or timeout
 	ros::Rate loop_rate(10);
+	detector_state__ = target_detector::DetectFeedback::STATE_ENABLED;
 	while ( 1 )
 	{
 		// check for external cancelation
 		if ( detect_as_ptr__->isPreemptRequested() )
 		{
 			lidar_reflector_subscriber__.shutdown();
+			detector_state__ = target_detector::DetectFeedback::STATE_DISABLED;
 			detect_as_ptr__->setPreempted(detect_result, "Detection cancelled");
 			return;
 		}
+
+		// publish feedback
+		detect_feedback.detector_state = detector_state__;
+		detect_feedback.detecting = true;
+		detect_as_ptr__->publishFeedback(detect_feedback);
 
 		// relax
 		loop_rate.sleep();

@@ -60,6 +60,9 @@ class TargetDetectorNode
 		std::string sensor_frame__; //lidar frame in which detection is referenced
 		bool verbose__;
 
+		// action feedback
+		std::atomic<unsigned char> detector_state__;
+
 	public:
 		//constructor
 		TargetDetectorNode();

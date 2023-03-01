@@ -10,4 +10,7 @@ string sensor_frame
 
 # FEEDBACK.
 
+uint8 STATE_DISABLED = 1
+uint8 STATE_ENABLED = 2
+uint8 detector_state
 bool detecting
