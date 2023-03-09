@@ -115,7 +115,7 @@ bool MarkerReflector::detect(
 	qt.y() = 0.0;
 	for( const auto & it : candidates_ij )
 	{
-		// marker origi
+		// marker origin
 		if ( clusters__[it.first].centroid().x() > 0.0) //if x>0, origin at leftmost point, from platform point of view.
 		{
 			if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )

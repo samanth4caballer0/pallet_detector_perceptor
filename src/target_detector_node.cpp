@@ -237,7 +237,7 @@ void TargetDetectorNode::publishMarkers(
 	viz_markers.markers[0].scale.y = 0.04;
 	viz_markers.markers[0].scale.z = 0.04;
 	viz_markers.markers[0].color.r = 1.0;
-	viz_markers.markers[0].color.g = 0.0;
+	viz_markers.markers[0].color.g = 1.0;
 	viz_markers.markers[0].color.b = 0.0;
 	viz_markers.markers[0].color.a = 1.0;
 	viz_markers.markers[0].points.resize(__key_points.size());
@@ -269,7 +269,7 @@ void TargetDetectorNode::publishMarkers(
 		viz_markers.markers[ii+1].scale.y = 0.02;
 		viz_markers.markers[ii+1].scale.z = 0.02;
 		viz_markers.markers[ii+1].color.r = 1.0;
-		viz_markers.markers[ii+1].color.g = 0.0;
+		viz_markers.markers[ii+1].color.g = 1.0;
 		viz_markers.markers[ii+1].color.b = 0.0;
 		viz_markers.markers[ii+1].color.a = 1.0;
 	}
