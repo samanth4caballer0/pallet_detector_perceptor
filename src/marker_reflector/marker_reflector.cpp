@@ -128,7 +128,7 @@ bool MarkerReflector::detect(
 			vx = vy.cross(vz);
 			mp = clusters__[it.second].centroid();
 		}
-		
+
 		/*
 		// marker origin
 		if ( clusters__[it.first].centroid().x() > 0.0) //if x>0, origin at leftmost point, from platform point of view.
@@ -155,13 +155,15 @@ bool MarkerReflector::detect(
 			vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
 			vx = vy.cross(vz);
 		}
+		*/
+
 		angle_z = atan2(vx.y(),vx.x());
 		qt.z() = sin(angle_z/2.0);
 		qt.w() = cos(angle_z/2.0);
 		__positions.push_back(mp);
 		__orientations.push_back(qt);
 		__confidences.push_back(1.0);
-		*/
+		
 	}
 
 	return true;
