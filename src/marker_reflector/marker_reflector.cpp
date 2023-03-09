@@ -118,6 +118,18 @@ bool MarkerReflector::detect(
 	qt.y() = 0.0;
 	for( const auto & it : candidates_ij )
 	{
+		vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
+		vx = vy.cross(vz);
+		mp = clusters__[it.first].centroid();
+		dot_p = vx.dot(mp);
+		if (dot_p > 0)
+		{
+			vy = clusters__[it.first].centroid() - clusters__[it.second].centroid();
+			vx = vy.cross(vz);
+			mp = clusters__[it.second].centroid();
+		}
+		
+		/*
 		// marker origin
 		if ( clusters__[it.first].centroid().x() > 0.0) //if x>0, origin at leftmost point, from platform point of view.
 		{
@@ -149,6 +161,7 @@ bool MarkerReflector::detect(
 		__positions.push_back(mp);
 		__orientations.push_back(qt);
 		__confidences.push_back(1.0);
+		*/
 	}
 
 	return true;
