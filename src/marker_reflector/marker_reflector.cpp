@@ -129,41 +129,13 @@ bool MarkerReflector::detect(
 			mp = clusters__[it.second].centroid();
 		}
 
-		/*
-		// marker origin
-		if ( clusters__[it.first].centroid().x() > 0.0) //if x>0, origin at leftmost point, from platform point of view.
-		{
-			if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
-				mp = clusters__[it.first].centroid();
-			else
-				mp = clusters__[it.second].centroid();
-		}
-		else //if x<0, origin at rightmost point, from platform point of view.
-		{
-			if ( clusters__[it.first].centroid().y() > clusters__[it.second].centroid().y() )
-				mp = clusters__[it.second].centroid();
-			else
-				mp = clusters__[it.first].centroid();
-		}
-
-		// marker orientation towards the platform
-		vy = clusters__[it.first].centroid() - clusters__[it.second].centroid();
-		vx = vy.cross(vz);
-		dot_p = vx.dot(mp);
-		if ( dot_p > 0.0 ) // check frame alignement
-		{
-			vy = clusters__[it.second].centroid() - clusters__[it.first].centroid();
-			vx = vy.cross(vz);
-		}
-		*/
-
 		angle_z = atan2(vx.y(),vx.x());
 		qt.z() = sin(angle_z/2.0);
 		qt.w() = cos(angle_z/2.0);
 		__positions.push_back(mp);
 		__orientations.push_back(qt);
 		__confidences.push_back(1.0);
-		
+
 	}
 
 	return true;
