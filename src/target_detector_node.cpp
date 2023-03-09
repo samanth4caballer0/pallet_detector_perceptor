@@ -17,20 +17,19 @@ TargetDetectorNode::~TargetDetectorNode()
 bool TargetDetectorNode::init()
 {
 	// get user params
-	int type;
 	std::string param_str;
 	double param_double;
 	int param_int;
 	std::map<std::string, std::string> detector_params;
 	std::vector<std::string> lidar_frames;
 
-	if ( !nh__.getParam("type", type) )
+	if ( !nh__.getParam("type", detector_type__) )
 	{
-		ROS_ERROR_STREAM("Failed to get DETECTOR type");
+		ROS_ERROR_STREAM("Failed to get detector type");
 		return false;
 	}
 
-	switch ( type )
+	switch ( detector_type__ )
 	{
 		case DETECTOR_MARKER_REFLECTOR:
 			if ( !nh__.getParam("lidar_frames", lidar_frames) )
@@ -46,12 +45,6 @@ bool TargetDetectorNode::init()
 				param_double = 0.03;
 			}
 			detector_params["clustering_distance"] = std::to_string(param_double);
-			if ( !nh__.getParam("reflector_distance", param_double) )
-			{
-				ROS_WARN("Failed to read parameter reflector_distance. Using default 1.05m.");
-				param_double = 1.05;
-			}
-			detector_params["reflector_distance"] = std::to_string(param_double);
 			if ( !nh__.getParam("reflector_distance_tolerance", param_double) )
 			{
 				ROS_WARN("Failed to read parameter reflector_distance_tolerance. Using default 0.03m.");
@@ -61,7 +54,7 @@ bool TargetDetectorNode::init()
 			detector__ = std::make_shared<MarkerReflector>();
 			break;
 		default:
-			ROS_ERROR_STREAM("Unknown detector type " << type);
+			ROS_ERROR_STREAM("Unknown detector type " << detector_type__);
 			return false;
 			break;
 	}
@@ -94,8 +87,19 @@ void TargetDetectorNode::detectCallback(
 	target_detector::DetectFeedback detect_feedback;
 	target_detector::DetectResult detect_result;
 
-	// get sensor frame
-	sensor_frame__ = __goal->sensor_frame;
+	// get params
+	dynamic_params__.clear();
+	switch ( detector_type__ )
+	{
+		case DETECTOR_MARKER_REFLECTOR:
+			sensor_frame__ = __goal->sensor_frame;
+			dynamic_params__["reflector_baseline"] = __goal->reflector_baseline;
+			break;
+		default:
+			ROS_WARN_STREAM("Unknown detector type " << detector_type__);
+			detect_as_ptr__->setAborted(detect_result, "Unknown detector type");
+			return; break;
+	}
 
 	// check if sensor frame was registered at lidar_frame_to_topic_map__
 	if ( lidar_frame_to_topic_map__.find(sensor_frame__) == lidar_frame_to_topic_map__.end() )
@@ -184,7 +188,7 @@ void TargetDetectorNode::lidarReflectorCallback(
 	std::vector<Eigen::Vector3d> positions;
 	std::vector<Eigen::Quaterniond> orientations;
 	std::vector<double> confidences;
-	detector__->detect(key_points, positions, orientations, confidences);
+	detector__->detect(dynamic_params__, key_points, positions, orientations, confidences);
 
 	// publish markers
 	publishMarkers(key_points, positions, orientations, "target_detector");

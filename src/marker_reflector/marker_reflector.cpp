@@ -16,7 +16,6 @@ MarkerReflector::~MarkerReflector()
 bool MarkerReflector::init(const std::map<std::string, std::string> & __params)
 {
 	clustering_distance__ = std::stod(__params.at("clustering_distance"));
-	reflector_distance__ = std::stod(__params.at("reflector_distance"));
 	reflector_distance_tolerance__ = std::stod(__params.at("reflector_distance_tolerance"));
 	return true;
 }
@@ -28,6 +27,7 @@ void MarkerReflector::resetData()
 }
 
 bool MarkerReflector::detect(
+	const std::map<std::string, double> & __params,
 	std::vector<Eigen::Vector3d> & __key_points,
 	std::vector<Eigen::Vector3d> & __positions,
 	std::vector<Eigen::Quaterniond> & __orientations,
@@ -36,6 +36,9 @@ bool MarkerReflector::detect(
 	// Initial check
 	if (rpoints__.size() < 2)
 		return false;
+
+	// set dynamic parameters
+	reflector_baseline__ = __params.at("reflector_baseline");
 
 	// clustering
 	bool point_clustered;
@@ -94,7 +97,7 @@ bool MarkerReflector::detect(
 	{
 		for (unsigned int jj = ii+1; jj<clusters__.size(); jj++)
 		{
-			if ( std::abs(d_matrix(ii,jj) - reflector_distance__) < reflector_distance_tolerance__ )
+			if ( std::abs(d_matrix(ii,jj) - reflector_baseline__) < reflector_distance_tolerance__ )
 			{
 				candidates_ij.push_back(std::pair<unsigned int, unsigned int>());
 				candidates_ij.back().first = ii;

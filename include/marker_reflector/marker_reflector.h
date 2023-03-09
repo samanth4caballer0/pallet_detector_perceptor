@@ -18,7 +18,7 @@ class MarkerReflector : public DetectorBase
 
 		// parameters
 		double clustering_distance__;
-		double reflector_distance__;
+		double reflector_baseline__;
 		double reflector_distance_tolerance__;
 
 	public:
@@ -27,6 +27,7 @@ class MarkerReflector : public DetectorBase
 		bool init(const std::map<std::string, std::string> & __params);
 		void resetData(); // clears both rpoints__ and clusters__
 		bool detect(
+			const std::map<std::string, double> & __params,
 			std::vector<Eigen::Vector3d> & __key_points,
 			std::vector<Eigen::Vector3d> & __positions,
 			std::vector<Eigen::Quaterniond> & __orientations,

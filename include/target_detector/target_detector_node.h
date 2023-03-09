@@ -36,6 +36,9 @@ class TargetDetectorNode
 		// detector object
 		std::shared_ptr<DetectorBase> detector__;
 
+		// type of detector object
+		int detector_type__;
+
 		//ros node handle
 		ros::NodeHandle nh__;
 
@@ -57,7 +60,8 @@ class TargetDetectorNode
 
 		//detector parameters
 		std::map<std::string, std::string> lidar_frame_to_topic_map__;
-		std::string sensor_frame__; //lidar frame in which detection is referenced
+		std::string sensor_frame__; // frame of the sensor providing data
+		std::map<std::string, double> dynamic_params__; //parameters that can be changed for each new detection
 		bool verbose__;
 
 		// action feedback

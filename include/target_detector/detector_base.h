@@ -22,7 +22,7 @@ class DetectorBase
 		DetectorBase(){};
 		~DetectorBase(){};
 
-		// initialization with custom parameters, depending on each class specialization
+		// initialization with static parameters, depending on each class specialization
 		virtual bool init(const std::map<std::string, std::string> & __params) = 0;
 
 		// clears input sensory data stored in class members, to start a new detection
@@ -30,6 +30,7 @@ class DetectorBase
 
 		// detect method only defines output arguments. Input data depending on the class specialization
 		virtual bool detect(
+			const std::map<std::string, double> & __params, // dynamic parameters
 			std::vector<Eigen::Vector3d> & __key_points, // key points for the detector, useful for visualization
 			std::vector<Eigen::Vector3d> & __positions, // origin of marker frames
 			std::vector<Eigen::Quaterniond> & __orientations, // orientation of marker frames

@@ -1,6 +1,7 @@
 # GOAL
 
 string sensor_frame
+float64 reflector_baseline
 
 ---
 
