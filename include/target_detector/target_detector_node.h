@@ -66,6 +66,7 @@ class TargetDetectorNode
 
 		// action feedback
 		std::atomic<unsigned char> detector_state__;
+		std::atomic<bool> detecting_flag__;
 
 	public:
 		//constructor

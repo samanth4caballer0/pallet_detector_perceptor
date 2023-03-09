@@ -135,6 +135,7 @@ void TargetDetectorNode::detectCallback(
 	// ACTION LOOP, while goal not reached, or timeout
 	ros::Rate loop_rate(10);
 	detector_state__ = target_detector::DetectFeedback::STATE_ENABLED;
+	detecting_flag__ = false;
 	while ( 1 )
 	{
 		// check for external cancelation
@@ -148,7 +149,7 @@ void TargetDetectorNode::detectCallback(
 
 		// publish feedback
 		detect_feedback.detector_state = detector_state__;
-		detect_feedback.detecting = true;
+		detect_feedback.detecting = detecting_flag__;
 		detect_as_ptr__->publishFeedback(detect_feedback);
 
 		// relax
@@ -189,6 +190,10 @@ void TargetDetectorNode::lidarReflectorCallback(
 	std::vector<Eigen::Quaterniond> orientations;
 	std::vector<double> confidences;
 	detector__->detect(dynamic_params__, key_points, positions, orientations, confidences);
+	if ( positions.empty() )
+		detecting_flag__= false;
+	else
+		detecting_flag__= true; 
 
 	// publish markers
 	publishMarkers(key_points, positions, orientations, "target_detector");
