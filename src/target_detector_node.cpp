@@ -25,8 +25,19 @@ bool TargetDetectorNode::init()
 
 	if ( !nh__.getParam("type", detector_type__) )
 	{
-		ROS_ERROR_STREAM("Failed to get detector type");
+		ROS_ERROR("Failed to get detector type");
 		return false;
+	}
+
+	if ( !nh__.getParam("topic_type", topic_type__) )
+	{
+		ROS_WARN("Failed to get topic_type. Using default sensor_msgs/LaserScan");
+		topic_type__ = SENSOR_MSG_LASER_SCAN;
+	}
+	if ( (topic_type__ != 1) && ( topic_type__ != 2) )
+	{
+		ROS_WARN("Invalid value for topic_type. Using default sensor_msgs/LaserScan");
+		topic_type__ = SENSOR_MSG_LASER_SCAN;
 	}
 
 	switch ( detector_type__ )
@@ -130,7 +141,23 @@ void TargetDetectorNode::detectCallback(
 
 	// subscribe to requested lidar
 	std::string lidar_topic = lidar_frame_to_topic_map__[sensor_frame__];
-	lidar_reflector_subscriber__ = nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::lidarReflectorCallback, this);
+	switch (topic_type__)
+	{
+		case SENSOR_MSG_LASER_SCAN:
+			lidar_reflector_subscriber__ =
+				nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::laserScanCallback, this);
+			break;
+		case SICK_EXTENDED_LASER_SCAN:
+			lidar_reflector_subscriber__ =
+				nh__.subscribe(lidar_topic, 1, &TargetDetectorNode::laserScanExtendedCallback, this);
+			break;
+		default:
+			ROS_WARN("Unknown topic_type");
+			detect_as_ptr__->setAborted(detect_result, "Unknown topic_type");
+			return;
+			break;
+	}
+
 
 	// ACTION LOOP, while goal not reached, or timeout
 	ros::Rate loop_rate(10);
@@ -158,11 +185,39 @@ void TargetDetectorNode::detectCallback(
 
 }
 
-void TargetDetectorNode::lidarReflectorCallback(
+void TargetDetectorNode::laserScanCallback(
+	const sensor_msgs::LaserScan & __scan)
+{
+	// adds data to detector
+	double calib_delta, range, angle;
+	Eigen::Vector2d p_sensor, p_platform; //point wrt sensor, p wrt platform
+	detector__->resetData();
+	for (unsigned int ii=0; ii<__scan.intensities.size(); ii++)
+	{
+		if ( __scan.intensities[ii] > 10000.0)
+		{
+			// apply simple calibration model for range in reflector points
+			if (__scan.ranges[ii] < 2.0 )
+				calib_delta = -0.01*__scan.ranges[ii]+0.02;
+			else
+				calib_delta = 0;
+			range =  __scan.ranges[ii] + calib_delta;
+			angle = __scan.angle_min + ii*__scan.angle_increment;
+			p_sensor.x() = range*cos(angle);
+			p_sensor.y() = range*sin(angle);
+			p_platform = T_platform2sensor__*p_sensor;
+			detector__->addPointData(p_platform.x(),p_platform.y(),1.0);
+		}
+	}
+
+	// detect
+	detect(__scan.header.stamp);
+}
+
+void TargetDetectorNode::laserScanExtendedCallback(
 	const sick_safetyscanners::ExtendedLaserScanMsg & __scan)
 {
-	// fills data to detector
-	//std::cout << "Lidar Callback" << std::endl;
+	// adds data to detector
 	double calib_delta, range, angle;
 	Eigen::Vector2d p_sensor, p_platform; //point wrt sensor, p wrt platform
 	detector__->resetData();
@@ -185,6 +240,12 @@ void TargetDetectorNode::lidarReflectorCallback(
 	}
 
 	// detect
+	detect(__scan.laser_scan.header.stamp);
+}
+
+void TargetDetectorNode::detect(const ros::Time & __stamp)
+{
+	// detect, assuming data has been already added to detector
 	std::vector<Eigen::Vector3d> key_points;
 	std::vector<Eigen::Vector3d> positions;
 	std::vector<Eigen::Quaterniond> orientations;
@@ -193,14 +254,14 @@ void TargetDetectorNode::lidarReflectorCallback(
 	if ( positions.empty() )
 		detecting_flag__= false;
 	else
-		detecting_flag__= true; 
+		detecting_flag__= true;
 
 	// publish markers
 	publishMarkers(key_points, positions, orientations, "target_detector");
 
 	// publish detection frames
 	target_detector::Detections msg;
-	msg.header.stamp = __scan.laser_scan.header.stamp;
+	msg.header.stamp = __stamp;
 	msg.header.frame_id = "platform";
 	msg.poses.resize(positions.size());
 	for (unsigned int ii=0; ii<positions.size(); ii++)

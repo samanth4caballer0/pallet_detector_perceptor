@@ -27,6 +27,9 @@ const int DETECTOR_MARKER_REFLECTOR = 1;
 const int DETECTOR_STD_PALLET = 2; // not implemented
 const int DETECTOR_QR = 3; // not implemented
 
+const int SENSOR_MSG_LASER_SCAN = 1;
+const int SICK_EXTENDED_LASER_SCAN = 2;
+
 namespace TargetDetector
 {
 
@@ -38,6 +41,9 @@ class TargetDetectorNode
 
 		// type of detector object
 		int detector_type__;
+
+		// type of laser scan topic (1:sensor_msgs/LaserScan ;  2:sick_safetyscanners/ExtendedLaserScanMsg)
+		int topic_type__;
 
 		//ros node handle
 		ros::NodeHandle nh__;
@@ -83,8 +89,9 @@ class TargetDetectorNode
 		void detectCallback(const target_detector::DetectGoalConstPtr & __goal);
 
 		// Laser scan callback. Detection starts here
-		//void lidarCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
-		void lidarReflectorCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
+		void laserScanCallback(const sensor_msgs::LaserScan & __scan);
+		void laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsg & __scan);
+		void detect(const ros::Time & __stamp);
 
 		// publish visualization markers for debugging purposes
 		void publishMarkers(
