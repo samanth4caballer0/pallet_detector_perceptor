@@ -34,10 +34,18 @@ bool TargetDetectorNode::init()
 		ROS_WARN("Failed to get topic_type. Using default sensor_msgs/LaserScan");
 		topic_type__ = SENSOR_MSG_LASER_SCAN;
 	}
-	if ( (topic_type__ != 1) && ( topic_type__ != 2) )
+	if ( (topic_type__ != SENSOR_MSG_LASER_SCAN) && ( topic_type__ != SICK_EXTENDED_LASER_SCAN) )
 	{
 		ROS_WARN("Invalid value for topic_type. Using default sensor_msgs/LaserScan");
 		topic_type__ = SENSOR_MSG_LASER_SCAN;
+	}
+	if ( !nh__.getParam("reflector_intensity_threshold", reflector_intensity_threshold__) )
+	{
+		if ( topic_type__ == SENSOR_MSG_LASER_SCAN )
+		{
+			ROS_WARN("Failed to get reflector_intensity_threshold. Using default 254");
+			reflector_intensity_threshold = 254;
+		}
 	}
 
 	switch ( detector_type__ )
@@ -52,8 +60,8 @@ bool TargetDetectorNode::init()
 			lidar_frame_to_topic_map__[lidar_frames.at(i)] = "laser_input"+std::to_string(i);
 			if ( !nh__.getParam("clustering_distance", param_double) )
 			{
-				ROS_WARN("Failed to read parameter clustering_distance. Using default 0.03m.");
-				param_double = 0.03;
+				ROS_WARN("Failed to read parameter clustering_distance. Using default 0.1m.");
+				param_double = 0.1;
 			}
 			detector_params["clustering_distance"] = std::to_string(param_double);
 			if ( !nh__.getParam("reflector_distance_tolerance", param_double) )
@@ -194,7 +202,7 @@ void TargetDetectorNode::laserScanCallback(
 	detector__->resetData();
 	for (unsigned int ii=0; ii<__scan.intensities.size(); ii++)
 	{
-		if ( __scan.intensities[ii] > 10000.0)
+		if ( __scan.intensities[ii] > reflector_intensity_threshold__)
 		{
 			// apply simple calibration model for range in reflector points
 			if (__scan.ranges[ii] < 2.0 )

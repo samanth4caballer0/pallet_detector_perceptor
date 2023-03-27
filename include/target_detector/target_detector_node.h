@@ -64,9 +64,10 @@ class TargetDetectorNode
 		// 2D sensor frame wrt the platform frame
 		Eigen::Isometry2d T_platform2sensor__;
 
-		//detector parameters
+		//detector and node parameters
 		std::map<std::string, std::string> lidar_frame_to_topic_map__;
 		std::string sensor_frame__; // frame of the sensor providing data
+		double reflector_intensity_threshold__;
 		std::map<std::string, double> dynamic_params__; //parameters that can be changed for each new detection
 		bool verbose__;
 

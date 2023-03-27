@@ -1,5 +1,6 @@
 type: 1 # DETECTOR_MARKER_REFLECTOR=1, DETECTOR_STD_PALLET=2, DETECTOR_QR=3
 lidar_frames: ['lidar_front', 'lidar_back']
 topic_type: 2 # 1:sensor_msgs/LaserScan, 2: sick_safetyscanners::ExtendedLaserScanMsg
+reflector_intensity_threshold: 254
 clustering_distance: 0.1
 reflector_distance_tolerance: 0.03
