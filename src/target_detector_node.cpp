@@ -44,7 +44,7 @@ bool TargetDetectorNode::init()
 		if ( topic_type__ == SENSOR_MSG_LASER_SCAN )
 		{
 			ROS_WARN("Failed to get reflector_intensity_threshold. Using default 254");
-			reflector_intensity_threshold = 254;
+			reflector_intensity_threshold__ = 254;
 		}
 	}
 
