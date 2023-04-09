@@ -57,7 +57,7 @@ bool TargetDetectorNode::init()
 				return false;
 			}
 			for ( int i = 0; i < lidar_frames.size(); i++ )
-			lidar_frame_to_topic_map__[lidar_frames.at(i)] = "laser_input"+std::to_string(i);
+				lidar_frame_to_topic_map__[lidar_frames.at(i)] = "laser_input"+std::to_string(i);
 			if ( !nh__.getParam("clustering_distance", param_double) )
 			{
 				ROS_WARN("Failed to read parameter clustering_distance. Using default 0.1m.");
@@ -79,7 +79,7 @@ bool TargetDetectorNode::init()
 	}
 
 	// init detetector object
-	if ( ! detector__->init(detector_params) )
+	if ( !detector__->init(detector_params) )
 	{
 		return false;
 	}
@@ -166,12 +166,11 @@ void TargetDetectorNode::detectCallback(
 			break;
 	}
 
-
 	// ACTION LOOP, while goal not reached, or timeout
 	ros::Rate loop_rate(10);
 	detector_state__ = target_detector::DetectFeedback::STATE_ENABLED;
 	detecting_flag__ = false;
-	while ( 1 )
+	while ( ros::ok() )
 	{
 		// check for external cancelation
 		if ( detect_as_ptr__->isPreemptRequested() )
@@ -190,7 +189,6 @@ void TargetDetectorNode::detectCallback(
 		// relax
 		loop_rate.sleep();
 	}
-
 }
 
 void TargetDetectorNode::laserScanCallback(
