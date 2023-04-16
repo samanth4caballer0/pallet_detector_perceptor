@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
+	message_generation
 	tf
 	geometry_msgs
 	sensor_msgs
@@ -32,6 +33,7 @@ generate_messages(
 
 catkin_package(CATKIN_DEPENDS
 	roscpp
+	message_generation
 	tf
 	geometry_msgs
 	sensor_msgs
