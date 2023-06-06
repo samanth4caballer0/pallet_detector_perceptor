@@ -10,35 +10,32 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	message_generation
-	tf
+	tf2_eigen
 	geometry_msgs
-	sensor_msgs
-	visualization_msgs
-	sick_safetyscanners
+	reflector_finder
 )
 
 add_message_files(
 	DIRECTORY msg
-	FILES Detections.msg
+	FILES
+		Detection.msg
+		Detections.msg
 )
-add_action_files(
-	DIRECTORY action
-	FILES Detect.action
+add_service_files(
+	DIRECTORY srv
+	FILES Detector.srv
 )
 generate_messages(
 	DEPENDENCIES
-	actionlib_msgs
-	geometry_msgs
+		geometry_msgs
 )
 
 catkin_package(CATKIN_DEPENDS
 	roscpp
 	message_generation
-	tf
+	tf2_eigen
 	geometry_msgs
-	sensor_msgs
-	visualization_msgs
-	sick_safetyscanners
+	reflector_finder
 )
 
 ###########
@@ -51,17 +48,15 @@ include_directories(
 )
 
 ## ROS node
-add_executable(${PROJECT_NAME}_node
-	src/marker_reflector/cluster.cpp
-	src/marker_reflector/marker_reflector.cpp
-	src/target_detector_node.cpp
-	src/main.cpp
+add_executable(target_detector
+	src/target_detector.cpp
+	src/target_detector_main.cpp
 )
-add_dependencies(${PROJECT_NAME}_node
+add_dependencies(target_detector
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(target_detector
 	${catkin_LIBRARIES}
 )
 
@@ -71,7 +66,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #############
 
 install(
-	TARGETS ${PROJECT_NAME}_node
+	TARGETS target_detector
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

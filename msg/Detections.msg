@@ -1,2 +1,2 @@
 std_msgs/Header header
-geometry_msgs/Pose[] poses
+target_detector/Detection[] detections

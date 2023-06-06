@@ -1,0 +1,6 @@
+bool enable
+float64 reflector_baseline
+
+---
+
+bool success
