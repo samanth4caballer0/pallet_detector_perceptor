@@ -21,13 +21,16 @@ bool TargetDetector::init()
 
 void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __reflectors)
 {
-	if ( !enabled__ )
-		return;
-
 	target_detector::Detections detections;
 	detections.header = __reflectors.header;
 
 	if ( __reflectors.reflectors.empty() )
+	{		
+		detector_publisher__.publish(detections);
+		return;
+	}
+
+	if ( !enabled__ )
 	{		
 		detector_publisher__.publish(detections);
 		return;
