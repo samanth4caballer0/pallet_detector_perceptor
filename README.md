@@ -1,9 +1,9 @@
 # Overview
 
-Detector of some target, such as:
+ROS "front-end" for object/marker detectors such as:
 
 - Lidar reflector marker
-- AR/QR tag (not implemented)
+- AR tag
 - Lidar geometric pattern, such as a v-marker (not implemented)
 - Point cloud geometric pattern, such as a pallet (not implemented)
 
@@ -13,8 +13,8 @@ Detector of some target, such as:
 
 ~type (int, no default):
   - 1 for DETECTOR_MARKER_REFLECTOR
-  - 2 for DETECTOR_STD_PALLET (not implemented yet)
-  - 3 for DETECTOR_QR (not implemented yet)
+  - 2 for DETECTOR_QR
+  - 3 for DETECTOR_STD_PALLET (not implemented yet)
 
 ~lidar_frames (vector of strings, no default): names of frames of sensors
 
