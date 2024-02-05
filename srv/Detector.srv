@@ -1,5 +1,16 @@
-bool enable
+
+# modes
+uint32 IDLE = 1
+uint32 REFLECTOR_MARKERS = 2
+uint32 ALVAR_MARKERS = 3
+uint32 ALL = 10	
+uint32 mode
+
+# in mode REFLECTOR_MARKERS, distance between a pair of reflectors that form the marker
 float64 reflector_baseline
+
+# in mode ALVAR_MARKERS, id of the tag, or id of the master tag in bundles
+uint32 alvar_marker_id
 
 ---
 

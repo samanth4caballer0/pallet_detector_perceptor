@@ -12,6 +12,7 @@
 #include "target_detector/Detections.h"
 #include "target_detector/Detection.h"
 #include "target_detector/Detector.h"
+#include "ar_track_alvar_msgs/AlvarMarkers.h"
 
 
 namespace TargetDetector
@@ -22,14 +23,15 @@ class TargetDetector
 	protected:
 
 		ros::NodeHandle nh__;
+		ros::ServiceServer mode_server__;
 		ros::Subscriber reflector_subscriber__;
+		ros::Subscriber alvar_subscriber__;
 		ros::Publisher detector_publisher__;
 
-		ros::ServiceServer enable_server__;
-		bool enabled__;
+		unsigned int mode__;
 		double reflector_baseline__;
-
 		double reflector_distance_tolerance__;
+		unsigned int alvar_marker_id__;
 
 	public:
 
@@ -37,8 +39,9 @@ class TargetDetector
 
 	protected:
 
+		bool modeCallback(target_detector::Detector::Request & __request, target_detector::Detector::Response & __response);
 		void reflectorCallback(const reflector_finder::Reflectors & __reflectors);
-		bool enableCallback(target_detector::Detector::Request & __request, target_detector::Detector::Response & __response);
+		void alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __alvar_markers);
 		double computeBaseline(const Eigen::Vector3d & __reflector_one, const Eigen::Vector3d & __reflector_two);
 };
 
