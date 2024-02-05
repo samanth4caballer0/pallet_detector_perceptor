@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 	tf2_eigen
 	geometry_msgs
 	reflector_finder
+	ar_track_alvar_msgs
 )
 
 add_message_files(
@@ -36,6 +37,7 @@ catkin_package(CATKIN_DEPENDS
 	tf2_eigen
 	geometry_msgs
 	reflector_finder
+	ar_track_alvar_msgs
 )
 
 ###########

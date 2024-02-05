@@ -26,5 +26,6 @@
 	<depend>tf2_eigen</depend>
 	<depend>geometry_msgs</depend>
 	<depend>reflector_finder</depend>
+	<depend>ar_track_alvar_msgs</depend>
 
 </package>
