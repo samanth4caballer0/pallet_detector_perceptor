@@ -23,6 +23,8 @@
 
 	<depend>roscpp</depend>
 	<depend>message_generation</depend>
+	<depend>tf2</depend>
+	<depend>tf2_ros</depend>
 	<depend>tf2_eigen</depend>
 	<depend>geometry_msgs</depend>
 	<depend>reflector_finder</depend>
