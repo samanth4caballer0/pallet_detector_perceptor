@@ -1,18 +1,24 @@
 #ifndef TARGET_DETECTOR__TARGET_DETECTOR_H
 #define TARGET_DETECTOR__TARGET_DETECTOR_H
 
-#include <ros/ros.h>
-#include <std_srvs/SetBool.h>
-#include <tf2_eigen/tf2_eigen.h>
-
+// eigen
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 
+// ros
+#include <ros/ros.h>
+#include <std_srvs/SetBool.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
+#include "ar_track_alvar_msgs/AlvarMarkers.h"
+
+// duna
 #include "reflector_finder/Reflectors.h"
 #include "target_detector/Detections.h"
 #include "target_detector/Detection.h"
 #include "target_detector/Detector.h"
-#include "ar_track_alvar_msgs/AlvarMarkers.h"
 
 
 namespace TargetDetector
@@ -32,6 +38,9 @@ class TargetDetector
 		double reflector_baseline__;
 		double reflector_distance_tolerance__;
 		unsigned int alvar_marker_id__;
+
+		tf2_ros::Buffer tf_buffer__;
+		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
 
 	public:
 

@@ -5,16 +5,23 @@ namespace TargetDetector
 
 bool TargetDetector::init()
 {
+	// get config params
 	if ( !nh__.getParam("reflector_distance_tolerance", reflector_distance_tolerance__) )
 	{
 		ROS_ERROR("Failed to get reflector_distance_tolerance parameter");
 		return false;
 	}
 
+	// init ros api
 	mode_server__ = nh__.advertiseService("detector_mode", &TargetDetector::modeCallback, this);
 	reflector_subscriber__ = nh__.subscribe("reflectors", 1, &TargetDetector::reflectorCallback, this);
 	detector_publisher__ = nh__.advertise<target_detector::Detections>( "target_detections", 1, false );
-	enabled__ = false;
+
+	// init mode
+	mode__ = target_detector::Detector::Request::IDLE;
+
+	// init tf
+	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
 	return true;
 }
@@ -69,15 +76,12 @@ bool TargetDetector::modeCallback(target_detector::Detector::Request & __request
 void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __reflectors)
 {
 	target_detector::Detections detections;
+	target_detector::Detection detection;
+	double angle;
+
 	detections.header = __reflectors.header;
-
-	if ( __reflectors.reflectors.empty() )
-	{
-		detector_publisher__.publish(detections);
-		return;
-	}
-
-	if ( !enabled__ )
+	if ( 	( __reflectors.reflectors.empty() ) ||
+			( mode__ == target_detector::Detector::Request::IDLE ) )
 	{
 		detector_publisher__.publish(detections);
 		return;
@@ -110,9 +114,10 @@ void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __re
 					platform_to_marker = reflector_two;
 				}
 
-				target_detector::Detection detection;
 				detection.pose.position = tf2::toMsg(platform_to_marker);
-				double angle = std::atan2(x_axis.y(), x_axis.x());
+				angle = std::atan2(x_axis.y(), x_axis.x());
+				detection.pose.orientation.x = 0.;
+				detection.pose.orientation.y = 0.;
 				detection.pose.orientation.z = std::sin(angle/2.0);
 				detection.pose.orientation.w = std::cos(angle/2.0);
 				detection.supports.push_back(__reflectors.reflectors.at(i).centroid);
@@ -126,9 +131,78 @@ void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __re
 	detector_publisher__.publish(detections);
 }
 
-void alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __alvar_markers)
+void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __alvar_markers)
 {
+	target_detector::Detections detections;
+	target_detector::Detection detection;
 
+	// idle or empty case ...
+	detections.header = __alvar_markers.header;
+	if ( 	( __alvar_markers.markers.empty() ) ||
+			( mode__ == target_detector::Detector::Request::IDLE ) )
+	{
+		detector_publisher__.publish(detections);
+		return;
+	}
+
+	// working case ...
+	geometry_msgs::TransformStamped tr_st;
+	Eigen::Quaterniond qt; //auxiliar quaternion
+	Eigen::Isometry3d Tp_c; // camera wrt platform (platform to camera). Static, from TF
+	Eigen::Isometry3d Tc_m; // marker wrt camera (camera to marker). From alvar detector
+	Eigen::Isometry3d Tp_m; // marker wrt platform (platform to marker). To be computed and published
+	double angle;
+	for ( int ii = 0; ii < __alvar_markers.markers.size(); ii++)
+	{
+		if ( __alvar_markers.markers[ii].id == alvar_marker_id__ )
+		{
+			// transform detection from camera to platform frame
+
+			// build platform to camera
+			try
+			{
+				tr_st = tf_buffer__.lookupTransform("platform", "camera_link",ros::Time(0));
+			}
+			catch (tf2::TransformException &ex)
+			{
+				ROS_WARN("%s",ex.what());
+				return;
+			}
+			qt.coeffs() << 	tr_st.transform.rotation.x,
+							tr_st.transform.rotation.y,
+							tr_st.transform.rotation.z,
+							tr_st.transform.rotation.w;
+			Tp_c.linear() = qt.matrix();
+			Tp_c.translation() << 	tr_st.transform.translation.x,
+									tr_st.transform.translation.y,
+									tr_st.transform.translation.z;
+
+			// build camera to marker
+			qt.coeffs() << 	__alvar_markers.markers[ii].pose.pose.orientation.x,
+							__alvar_markers.markers[ii].pose.pose.orientation.y,
+							__alvar_markers.markers[ii].pose.pose.orientation.z,
+							__alvar_markers.markers[ii].pose.pose.orientation.w;
+			Tc_m.linear() = qt.matrix();
+			Tc_m.translation() <<	__alvar_markers.markers[ii].pose.pose.position.x,
+									__alvar_markers.markers[ii].pose.pose.position.y,
+									__alvar_markers.markers[ii].pose.pose.position.z;
+
+
+			// compute platform to marker and fill the output message
+			Tp_m = Tp_c*Tc_m;
+			detection.pose.position.x = Tp_m.translation().x();
+			detection.pose.position.y = Tp_m.translation().y();
+			detection.pose.position.z = Tp_m.translation().z();
+			angle = atan2(Tp_m.linear()(1,2),Tp_m.linear()(0,2)); // angle of marker Z axis wrt platform, in the XY platform plane
+			detection.pose.orientation.x = 0.;
+			detection.pose.orientation.y = 0.;
+			detection.pose.orientation.z = std::sin(angle/2.0);
+			detection.pose.orientation.w = std::cos(angle/2.0);
+			detections.detections.push_back(detection);
+		}
+	}
+
+	detector_publisher__.publish(detections);
 }
 
 double TargetDetector::computeBaseline(const Eigen::Vector3d & __reflector_one, const Eigen::Vector3d & __reflector_two)
