@@ -8,13 +8,14 @@ bool TargetDetector::init()
 	// get config params
 	if ( !nh__.getParam("reflector_distance_tolerance", reflector_distance_tolerance__) )
 	{
-		ROS_ERROR("Failed to get reflector_distance_tolerance parameter");
-		return false;
+		ROS_WARN("Failed to get reflector_distance_tolerance parameter. Setting to default value 0.03.");
+		reflector_distance_tolerance__ = 0.03;
 	}
 
 	// init ros api
 	mode_server__ = nh__.advertiseService("detector_mode", &TargetDetector::modeCallback, this);
 	reflector_subscriber__ = nh__.subscribe("reflectors", 1, &TargetDetector::reflectorCallback, this);
+	alvar_subscriber__ = nh__.subscribe("alvar", 1, &TargetDetector::alvarCallback, this);
 	detector_publisher__ = nh__.advertise<target_detector::Detections>( "target_detections", 1, false );
 
 	// init mode
@@ -36,35 +37,37 @@ bool TargetDetector::modeCallback(target_detector::Detector::Request & __request
 			break;
 
 		case target_detector::Detector::Request::REFLECTOR_MARKERS:
-			mode__ = target_detector::Detector::Request::REFLECTOR_MARKERS;
 			if ( __request.reflector_baseline < 0.0)
 			{
-				ROS_WARN("TargetDetector::modeCallback: reflector baseline must be positive.");
+				ROS_WARN("TargetDetector::modeCallback: reflector baseline must be positive. Detector mode set to idle");
+				mode__ = target_detector::Detector::Request::IDLE;
 				__response.success = false;
 			}
 			else
 			{
+				mode__ = target_detector::Detector::Request::REFLECTOR_MARKERS;
 				reflector_baseline__ = __request.reflector_baseline;
 				__response.success = true;
 			}
 			break;
 
 		case target_detector::Detector::Request::ALVAR_MARKERS:
-			mode__ = target_detector::Detector::Request::ALVAR_MARKERS;
 			if ( (__request.alvar_marker_id < 0) || (__request.alvar_marker_id > 18 ) )
 			{
-				ROS_WARN("TargetDetector::modeCallback: alvar marker id must be in [0,18].");
+				ROS_WARN("TargetDetector::modeCallback: alvar marker id must be in [0,18]. Detector mode set to idel");
+				mode__ = target_detector::Detector::Request::IDLE;
 				__response.success = false;
 			}
 			else
 			{
+				mode__ = target_detector::Detector::Request::ALVAR_MARKERS;
 				alvar_marker_id__ = __request.alvar_marker_id;
 				__response.success = true;
 			}
 			break;
 
 		default:
-			ROS_WARN("TargetDetector::modeCallback: Unknown detector mode. Detector set to idle.");
+			ROS_WARN("TargetDetector::modeCallback: Unknown detector mode. Detector mode set to idle.");
 			mode__ = target_detector::Detector::Request::IDLE;
 			__response.success = false;
 			break;
@@ -81,7 +84,7 @@ void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __re
 
 	detections.header = __reflectors.header;
 	if ( 	( __reflectors.reflectors.empty() ) ||
-			( mode__ == target_detector::Detector::Request::IDLE ) )
+			( mode__ != target_detector::Detector::Request::REFLECTOR_MARKERS ) )
 	{
 		detector_publisher__.publish(detections);
 		return;
@@ -139,7 +142,7 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 	// idle or empty case ...
 	detections.header = __alvar_markers.header;
 	if ( 	( __alvar_markers.markers.empty() ) ||
-			( mode__ == target_detector::Detector::Request::IDLE ) )
+			( mode__ != target_detector::Detector::Request::ALVAR_MARKERS ) )
 	{
 		detector_publisher__.publish(detections);
 		return;
@@ -186,7 +189,6 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 			Tc_m.translation() <<	__alvar_markers.markers[ii].pose.pose.position.x,
 									__alvar_markers.markers[ii].pose.pose.position.y,
 									__alvar_markers.markers[ii].pose.pose.position.z;
-
 
 			// compute platform to marker and fill the output message
 			Tp_m = Tp_c*Tc_m;

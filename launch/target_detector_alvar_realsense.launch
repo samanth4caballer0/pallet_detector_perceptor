@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<!-- Input arguments -->
+	<arg name="marker_size" default="7.0" />
+	<arg name="max_new_marker_error" default="0.08" />
+	<arg name="max_track_error" default="0.2" />
+	<arg name="output_frame" default="/camera_link" />
+	<arg name="bundle_files" default="$(find target_detector)/alvar_markers/MarkerData_0_1.xml" />
+	<arg name="rviz" default="false" />
+
+	<!-- realsense camera with point cloud -->
+	<include file="$(find realsense2_camera)/launch/rs_camera.launch">
+		<arg name="camera" value="camera"/> <!-- camera name, used by tf prefix and namespacing -->
+		<arg name="enable_pointcloud" value="true"/>
+		<arg name="filters" value="pointcloud"/>
+		<arg name="publish_odom_tf" value="false"/>
+	</include>
+
+	<!-- ALVAR tracking -->
+	<node
+		pkg="ar_track_alvar"
+		type="findMarkerBundlesNoKinect"
+		name="alvar_tracker"
+		respawn="false"
+		output="screen">
+		<param name="marker_size" type="double" value="$(arg marker_size)" />
+		<param name="max_new_marker_error" type="double" value="$(arg max_new_marker_error)" />
+		<param name="max_track_error" type="double" value="$(arg max_track_error)" />
+		<param name="output_frame" type="string" value="$(arg output_frame)" />
+		<param name="bundle_files" type="string" value="$(arg bundle_files)" />
+		<!--<remap from="camera_image" to="/camera/depth/color/points" />-->
+		<!--<remap from="camera_info" to="/camera/color/camera_info" />-->
+		<remap from="camera_image" to="/camera/color/image_raw" />
+		<remap from="camera_info" to="/camera/color/camera_info" />
+	 </node>
+
+	<!-- Target detector -->
+	<group ns="target_detector">
+		<!--<rosparam file="$(find target_detector)/config/lidar_reflector.yaml" command="load"/>-->
+		<remap from="alvar" to="/ar_pose_marker"/>
+		<node
+			pkg="target_detector"
+			type="target_detector"
+			name="target_detector"
+			output="screen" >
+		</node>
+	</group>
+
+	<!-- rviz -->
+	<group if="$(arg rviz)">
+		<node
+			name="rviz"
+			pkg="rviz"
+			type="rviz"
+			args="-d $(find target_detector)/rviz/target_detector_alvar_realsense.rviz">
+		</node>
+	</group>
+
+</launch>
