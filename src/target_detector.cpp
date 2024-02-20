@@ -140,13 +140,16 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 	target_detector::Detection detection;
 
 	// idle or empty case ...
-	detections.header = __alvar_markers.header;
+	detections.header = __alvar_markers.header; //this top message header is always empty
 	if ( 	( __alvar_markers.markers.empty() ) ||
 			( mode__ != target_detector::Detector::Request::ALVAR_MARKERS ) )
 	{
 		detector_publisher__.publish(detections);
 		return;
 	}
+
+	// if at least on marker, get header from first marker detected, since top message header is always empty
+	detections.header = __alvar_markers.markers[0].header;
 
 	// working case ...
 	geometry_msgs::TransformStamped tr_st;
@@ -164,7 +167,8 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 			// build platform to camera
 			try
 			{
-				tr_st = tf_buffer__.lookupTransform("platform", "camera_link",ros::Time(0));
+				tr_st = tf_buffer__.lookupTransform("platform", __alvar_markers.markers[0].header.frame_id,ros::Time(0));
+				std::cout << "----------: " << __LINE__ << ": " __alvar_markers.markers[0].header.frame_id << std::endl; 
 			}
 			catch (tf2::TransformException &ex)
 			{
