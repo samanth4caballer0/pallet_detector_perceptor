@@ -82,9 +82,22 @@ void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __re
 	target_detector::Detection detection;
 	double angle;
 
+	// copy header
 	detections.header = __reflectors.header;
-	if ( 	( __reflectors.reflectors.empty() ) ||
-			( mode__ != target_detector::Detector::Request::REFLECTOR_MARKERS ) )
+
+	// Check mode
+	if ( mode__ != target_detector::Detector::Request::REFLECTOR_MARKERS )
+	{
+		if (mode__ == target_detector::Detector::Request::IDLE)
+		{
+			detector_publisher__.publish(detections);
+		}
+		return;
+	}
+
+	// Check empty condition
+	detections.header = __reflectors.header;
+	if ( __reflectors.reflectors.empty() )
 	{
 		detector_publisher__.publish(detections);
 		return;
@@ -139,10 +152,15 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 	target_detector::Detections detections;
 	target_detector::Detection detection;
 
-	// idle or empty case ...
+	// Check mode
+	if ( mode__ != target_detector::Detector::Request::ALVAR_MARKERS )
+	{
+		return;
+	}
+
+	// Check empty condition
 	detections.header = __alvar_markers.header; //this top message header is always empty
-	if ( 	( __alvar_markers.markers.empty() ) ||
-			( mode__ != target_detector::Detector::Request::ALVAR_MARKERS ) )
+	if ( __alvar_markers.markers.empty() )
 	{
 		detector_publisher__.publish(detections);
 		return;
