@@ -3,9 +3,13 @@
 ROS "front-end" for object/marker detectors such as:
 
 - Lidar reflector marker
-- AR tag
+- ALVAR single tag or bundle of tags
 - Lidar geometric pattern, such as a v-marker (not implemented)
 - Point cloud geometric pattern, such as a pallet (not implemented)
+
+# Frames
+
+The published detections are referenced to the platform frame. The X axis of the detected target object (marker, ...) is normal to the target object surface, pointing to the observer. The Z axis of the detected object is pointing up from the object, and the Y axis fulfills the right hand rule Z x X = Y.
 
 # ROS API
 
