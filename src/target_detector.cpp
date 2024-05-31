@@ -166,8 +166,9 @@ void TargetDetector::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __a
 		return;
 	}
 
-	// if at least on marker, get header from first marker detected, since top message header is always empty
+	// if at least one marker, get header from first marker detected, since top message header is always empty
 	detections.header = __alvar_markers.markers[0].header;
+	detections.header.frame_id = "platform";
 
 	// working case ...
 	geometry_msgs::TransformStamped tr_st;
