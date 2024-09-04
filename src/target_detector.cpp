@@ -136,6 +136,7 @@ void TargetDetector::reflectorCallback(const reflector_finder::Reflectors & __re
 				detection.pose.orientation.y = 0.;
 				detection.pose.orientation.z = std::sin(angle/2.0);
 				detection.pose.orientation.w = std::cos(angle/2.0);
+				detection.suppots.clear(); 
 				detection.supports.push_back(__reflectors.reflectors.at(i).centroid);
 				detection.supports.push_back(__reflectors.reflectors.at(j).centroid);
 				detection.baseline = actual_baseline;
