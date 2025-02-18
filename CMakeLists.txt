@@ -54,25 +54,39 @@ include_directories(
 )
 
 ## ROS node
-add_executable(target_detector
-	src/target_detector.cpp
-	src/target_detector_main.cpp
+#add_executable(target_detector
+#	src/target_detector.cpp
+#	src/target_detector_main.cpp
+#)
+#add_dependencies(target_detector
+#	${${PROJECT_NAME}_EXPORTED_TARGETS}
+#	${catkin_EXPORTED_TARGETS}
+#)
+#target_link_libraries(target_detector
+#	${catkin_LIBRARIES}
+#)
+
+## Tests
+add_executable(test_cluster
+	src/cluster.cpp
+	src/tests/test_cluster.cpp
 )
-add_dependencies(target_detector
-	${${PROJECT_NAME}_EXPORTED_TARGETS}
-	${catkin_EXPORTED_TARGETS}
-)
-target_link_libraries(target_detector
-	${catkin_LIBRARIES}
-)
+
 
 
 #############
 ## Install ##
 #############
 
+#install(
+#	TARGETS target_detector
+#	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
+
 install(
-	TARGETS target_detector
+	TARGETS test_cluster
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -1,0 +1,79 @@
+#ifndef TARGET_DETECTOR__CLUSTER_H
+#define TARGET_DETECTOR__CLUSTER_H
+
+// std c++
+#include <iostream>
+#include <vector>
+//#include <numeric>
+#include <cmath>
+
+// eigen
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
+
+namespace TargetDetector
+{
+
+class Cluster
+{
+	protected:
+
+		std::vector<Eigen::Vector2d> points__;
+		std::vector<double> intensities__;
+		Eigen::Vector2d centroid__;
+		Eigen::Matrix2d covariance__;
+		double intensity__;
+
+	public:
+
+		// default constructor
+		Cluster();
+
+		// constructor with a first point
+		Cluster(const Eigen::Vector2d & __point, const double & __intensity);
+
+		// destructor
+		~Cluster();
+
+		// returns a reference to the vector of points supporting this cluster
+		const std::vector<Eigen::Vector2d> & points() const;
+
+		// returns the number of points supporting this cluster
+		unsigned int size() const;
+
+		// returns a cont reference to the centroid of this cluster
+		const Eigen::Vector2d & centroid() const;
+
+		// returns mean intensity
+		double intensity() const;
+
+		// return the ramge of the centroid
+		double range() const;
+
+		// check if __point belongs to this cluster, according to the point to centroid distance
+		bool belongsCentroid(const Eigen::Vector2d & __point, const double & __belonging_distance) const;
+
+		// check if __point belongs to this cluster, according to the point to points__.back() distance
+		bool belongsBackPoint(const Eigen::Vector2d & __point, const double & __belonging_distance) const;
+
+		// check if __point belongs to this cluster, according to the point to any points__[ii] distance
+		bool belongsAnyPoint(const Eigen::Vector2d & __point, const double & __belonging_distance) const;
+
+		// adds a point to the cluster
+ 		// __point
+		// __intensity
+		void addPoint(const Eigen::Vector2d & __point, const double & __intensity);
+
+		// prints cluster info
+		// __verbose: if true, all points are printed
+		void print(bool __verbose) const;
+
+	protected:
+
+		// recusrively updates centroid and intensity with the last point and intensity
+		void update();
+};
+
+}
+
+#endif
