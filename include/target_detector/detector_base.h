@@ -8,7 +8,7 @@
 namespace TargetDetector
 {
 
-enum DetetcorType
+enum DetectorType
 {
 	UNKNOWN = 0,
 	REFLECTOR,
@@ -32,11 +32,11 @@ class DetectorBase
 
 		// Configures the detector with the parameters
 		// - __params: set of tuning parameters: name and value
-		virtual bool configure(const std::map<std::string, std::string> & __params) = 0;
+		virtual bool configure(const std::map<std::string, double> & __params) = 0;
 
 		// Returns detector type
-		DetetcorType type() = 0;
-);
+		virtual DetectorType type() const = 0;
+};
 
 }
 

@@ -1,3 +1,6 @@
+# detection type
+uint32 type
+
 # pose and orientation of the detection
 geometry_msgs/PoseWithCovariance pose
 
@@ -6,6 +9,9 @@ float64 intensity
 
 # number of support points for cluster based detectors
 uint32 size
+
+# support points for cluster based detectors
+geometry_msgs/Point[] supports
 
 # baseline for reflector pair detector
 float64 baseline

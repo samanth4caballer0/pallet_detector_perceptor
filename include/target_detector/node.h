@@ -37,7 +37,8 @@ class Node
 		// tf
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, geometry_msgs::TransformStamped> T_lidar_to_robot__;
+		//std::map<std::string, geometry_msgs::TransformStamped> T_lidar_to_robot__;
+		std::map<std::string, Eigen::Isometry2d> T_robot_to_lidar__;
 
 		// Detector and detections
 		TargetDetector::DetectorReflector detector__;
@@ -54,6 +55,7 @@ class Node
 		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr);
 		void extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr);
 		void reconfigureCallback(reflector_finder::reflector_finderConfig & __config, uint32_t __level);
+		bool saveLidarTransform(const std_msgs::Header & __header);
 		void publishDetections(const std_msgs::Header & __header);
 };
 

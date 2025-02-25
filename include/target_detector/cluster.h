@@ -64,6 +64,10 @@ class Cluster
 		// __intensity
 		void addPoint(const Eigen::Vector2d & __point, const double & __intensity);
 
+		// transform centroid__ and covariance__ to another frame A
+		// - __T: is the transform from frame A to current frame (i.e. lidar extrinsics: platform to lidar or lidar wrt platform)
+		void transform(const Eigen::Isometry2d & __T);
+
 		// prints cluster info
 		// __verbose: if true, all points are printed
 		void print(bool __verbose) const;

@@ -72,6 +72,12 @@ add_executable(test_cluster
 	src/tests/test_cluster.cpp
 )
 
+## Tests
+add_executable(test_detector_reflector
+	src/cluster.cpp
+	src/detector_reflector.cpp
+	src/tests/test_detector_reflector.cpp
+)
 
 
 #############
@@ -86,7 +92,7 @@ add_executable(test_cluster
 #)
 
 install(
-	TARGETS test_cluster
+	TARGETS test_cluster test_detector_reflector
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

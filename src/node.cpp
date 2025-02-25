@@ -81,12 +81,18 @@ bool Node::init()
 
 void Node::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 {
+	// check if platform->lidar transform exists, and save it if not
+	if ( !saveLidarTransform(__scan_ptr->header) )
+	{
+		ROS_WARN("Node::laserScanCallback(): scan not processed because missing tf");
+	}
 	detections__.clear();
 	reconfigure_mutex__.lock();
 	detector__.detect(
 		__scan_ptr->angle_min,
 		__scan_ptr->angle_max,
 		__scan_ptr->ranges,
+		T_robot_to_lidar__[__scan_ptr->__header.frame_id]
 		__scan->intensities,
 		detections__);
 	reconfigure_mutex__.unlock();
@@ -116,6 +122,35 @@ void ReflectorFinder::reconfigureCallback(reflector_finder::reflector_finderConf
 	reconfigure_mutex__.lock();
 	detector__.configure(detector_params__);
 	reconfigure_mutex__.unlock();
+}
+
+bool Node::saveLidarTransform(const std_msgs::Header & __header)
+{
+ 	geometry_msgs::TransformStamped Trl; // from robot to lidar
+	double angle_z;
+	// if frame_id not already in the transforms map, keep it
+	if ( T_robot_to_lidar__.find(__header.frame_id) == T_lidar_to_robot__.end() )
+	{
+		try
+		{
+			//T_lidar_to_robot__[__header.frame_id] = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+			Trl = tf_buffer__.lookupTransform(__header.frame_id, robot_frame__, __header.stamp, ros::Duration(1.0));
+
+			// convert to Eigen::Isometry2d
+			angle_z = 2*std::atan2(Trl.transform.rotation.z, Trl.transform.rotation.w);
+			T_robot_to_lidar__[__header.frame_id].matrix() <<
+				std::cos(angle_z), -std::sin(angle_z), Trl.transform.position.x,
+				std::sin(angle_z),  std::cos(angle_z), Trl.transform.position.y,
+				0,0,1;
+		}
+		catch (tf2::TransformException & __ex)
+		{
+			ROS_WARN("%s", __ex.what());
+			ros::Duration(1.0).sleep();
+			return false;
+		}
+	}
+	return true;
 }
 
 void Node::publishDetections(const std_msgs::Header & __header)

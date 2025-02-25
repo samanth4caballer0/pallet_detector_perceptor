@@ -23,31 +23,34 @@ bool DetectorReflector::configure(const std::map<std::string, double> & __params
 	if (__params.count("reflector_width") != 0 )
 		reflector_width__ = __params.at("reflector_width");
 	else
-		reflector_width__ = 0.03;
+		reflector_width__ = 0.06;
 	if (__params.count("max_reflector_range") != 0 )
 		max_reflector_range__ = __params.at("max_reflector_range");
 	else
-		max_reflector_range__ = 0.03;
+		max_reflector_range__ = 25;
 
 	return true;
 }
 
-const string DetectorReflector::description() const
+DetectorType DetectorReflector::type() const
 {
-	return std::string("detector_reflector");
+	return REFLECTOR;
 }
 
 bool DetectorReflector::detect(
 	const double & __angle_init,
 	const double & __angle_end,
-	const std::vector<float32_t> & __ranges,
-	const std::vector<float32_t> & __intensities,
+	const std::vector<float> & __ranges,
+	const std::vector<float> & __intensities,
+	const Eigen::Isometry2d & __T_platform_sensor,
 	std::vector<double> & __detections)
 {
 	// check empty conditions
 	if ( __ranges.empty() )
 		return false;
 	if ( __intensities.empty() )
+		return false;
+	if ( __ranges.size() != __intensities.size() )
 		return false;
 
 	// precomputes fixed part involving tangent
@@ -74,7 +77,7 @@ bool DetectorReflector::detect(
 
 			// computes clustering parameters according scan data.
 			// +0.04 to take into account typical range noise
-			clustering_distance = __scan.ranges.at(ii)*tan_res_x2+0.04;
+			clustering_distance = __ranges[ii]*tan_res_x2+0.04;
 
 			// clustering
 			in_cluster = false;
@@ -82,14 +85,14 @@ bool DetectorReflector::detect(
 			{
 				if ( cluster.belongsCentroid(point_in_lidar, clustering_distance) )
 				{
-					cluster.addPoint(point_in_lidar, __scan.intensities.at(ii));
+					cluster.addPoint(point_in_lidar, __intensities[ii]);
 					in_cluster = true;
 					break;
 				}
 			}
 			if ( !in_cluster )
 			{
-				clusters.push_back(Cluster(point_in_lidar, __scan.intensities.at(ii)));
+				clusters.push_back(Cluster(point_in_lidar, __intensities[ii]));
 			}
 		}
 	}
@@ -97,6 +100,7 @@ bool DetectorReflector::detect(
 	// Filter out clusters without enough supports
 	double reflector_aperture;
 	unsigned int min_support_points;
+	//std::cout << __LINE__ << ":  clusters.size(): " << clusters.size() << std::endl << std::endl;
 	for ( auto & cluster : clusters )
 	{
 		// compute min_support_points
@@ -107,19 +111,18 @@ bool DetectorReflector::detect(
 		// Only publish clusters with enough supports
 		if ( cluster.size() >= min_support_points)
 		{
-			__detections.push_back(cluster.size());
-			__detections.push_back(cluster.intensity__());
-			__detections.push_back(cluster.centroid__().x());
-			__detections.push_back(cluster.centroid__().y());
+			// transform to robot frame
+			cluster.transform(__T_platform_sensor); 
+			__detections.push_back((double)cluster.size());
+			__detections.push_back(cluster.intensity());
+			__detections.push_back(cluster.centroid().x());
+			__detections.push_back(cluster.centroid().y());
 			__detections.push_back(0.05); //cxx not yet computed
 			__detections.push_back(0.05); //cyy not yet computed
 		}
 	}
-}
 
-DetetcorType DetectorReflector::type()
-{
-	return REFLECTOR;
+	return true;
 }
 
 double DetectorReflector::correctDistortion(const double & __range)

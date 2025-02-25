@@ -87,6 +87,12 @@ void Cluster::addPoint(const Eigen::Vector2d & __point, const double & __intensi
 	update();
 }
 
+void Cluster::transform(const Eigen::Isometry2d & __T)
+{
+	centroid__ = __T*centroid__; // transforms point to a new frame
+	covariance__ = __T.linear()*covariance__;  // rotates covariance to a new frame
+}
+
 void Cluster::print(bool __verbose) const
 {
 	std::cout << "size: " << this->size() << std::endl;
