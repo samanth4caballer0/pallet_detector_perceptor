@@ -3,12 +3,12 @@
 namespace TargetDetector
 {
 
-void Node::Node()
+Node::Node()
 {
 	//
 }
 
-void Node::~Node()
+Node::~Node()
 {
 	//
 }
@@ -59,9 +59,9 @@ bool Node::init()
 	for ( auto & lidar : lidars )
 	{
 		if ( scan_type == "sensor_msgs/LaserScan" )
-			scan_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
+			lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
 		else if ( scan_type == "sick_safetyscanners/ExtendedLaserScanMsg" )
-			scan_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::extendedLaserScanCallback, this));
+			lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::extendedLaserScanCallback, this));
 		else
 			return false;
 	}
@@ -92,14 +92,14 @@ void Node::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 		__scan_ptr->angle_min,
 		__scan_ptr->angle_max,
 		__scan_ptr->ranges,
-		T_robot_to_lidar__[__scan_ptr->__header.frame_id]
-		__scan->intensities,
+		__scan_ptr->intensities,
+		T_robot_to_lidar__[__scan_ptr->header.frame_id],
 		detections__);
 	reconfigure_mutex__.unlock();
 	publishDetections(__scan_ptr->header);
 }
 
-void ReflectorFinder::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr)
+void Node::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr)
 {
 /*	std::vector<bool> reflector_hits;
 	for ( auto & reflector_status : __extended_scan_ptr->reflektor_status )
@@ -107,7 +107,7 @@ void ReflectorFinder::extendedLaserScanCallback(const sick_safetyscanners::Exten
 	findReflectors(reflector_hits, __extended_scan_ptr->laser_scan);*/
 }
 
-void ReflectorFinder::reconfigureCallback(reflector_finder::reflector_finderConfig & __config, uint32_t __level)
+void Node::reconfigureCallback(target_detector::target_detectorConfig & __config, uint32_t __level)
 {
 	// we want to keep the params in the yaml, so avoid taking defaults from dynamic reconfigure
 	if ( first_dynamic_reconfigure__ )
@@ -129,7 +129,7 @@ bool Node::saveLidarTransform(const std_msgs::Header & __header)
  	geometry_msgs::TransformStamped Trl; // from robot to lidar
 	double angle_z;
 	// if frame_id not already in the transforms map, keep it
-	if ( T_robot_to_lidar__.find(__header.frame_id) == T_lidar_to_robot__.end() )
+	if ( T_robot_to_lidar__.find(__header.frame_id) == T_robot_to_lidar__.end() )
 	{
 		try
 		{
@@ -139,8 +139,8 @@ bool Node::saveLidarTransform(const std_msgs::Header & __header)
 			// convert to Eigen::Isometry2d
 			angle_z = 2*std::atan2(Trl.transform.rotation.z, Trl.transform.rotation.w);
 			T_robot_to_lidar__[__header.frame_id].matrix() <<
-				std::cos(angle_z), -std::sin(angle_z), Trl.transform.position.x,
-				std::sin(angle_z),  std::cos(angle_z), Trl.transform.position.y,
+				std::cos(angle_z), -std::sin(angle_z), Trl.transform.translation.x,
+				std::sin(angle_z),  std::cos(angle_z), Trl.transform.translation.y,
 				0,0,1;
 		}
 		catch (tf2::TransformException & __ex)
@@ -162,7 +162,7 @@ void Node::publishDetections(const std_msgs::Header & __header)
 	msg.header.frame_id = robot_frame__;
 
 	// fill the message according the detector type
-	switch( detector.type() )
+	switch( detector__.type() )
 	{
 		case REFLECTOR:
 			msg.detections.resize( detections__.size() / 6 ); // each detection are 6 doubles

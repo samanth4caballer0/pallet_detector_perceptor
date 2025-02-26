@@ -11,8 +11,9 @@
 #include <sick_safetyscanners/ExtendedLaserScanMsg.h>
 
 // this package
-#include <target_reflector/target_reflectorConfig.h>
 #include "target_detector/detector_reflector.h"
+#include "target_detector/Detections.h"
+#include <target_detector/target_detectorConfig.h>
 
 namespace TargetDetector
 {
@@ -46,15 +47,15 @@ class Node
 
 	public:
 
-		void Node();
-		void ~Node();
+		Node();
+		~Node();
 		bool init();
 
 	protected:
 
 		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr);
 		void extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr);
-		void reconfigureCallback(reflector_finder::reflector_finderConfig & __config, uint32_t __level);
+		void reconfigureCallback(target_detector::target_detectorConfig & __config, uint32_t __level);
 		bool saveLidarTransform(const std_msgs::Header & __header);
 		void publishDetections(const std_msgs::Header & __header);
 };

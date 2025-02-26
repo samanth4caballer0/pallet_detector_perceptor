@@ -1,11 +1,11 @@
-#include "target_detector/target_detector.h"
+#include "target_detector/node.h"
 
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "target_detector");
 
-	TargetDetector::TargetDetector target_detectro;
-	if ( !target_detectro.init() )
+	TargetDetector::Node target_detector;
+	if ( !target_detector.init() )
 	{
 		ROS_ERROR("Failed to init");
 		return -1;

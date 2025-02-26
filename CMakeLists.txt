@@ -12,12 +12,19 @@ find_package(catkin REQUIRED COMPONENTS
 	message_generation
 	tf2
 	tf2_ros
-	tf2_eigen
 	geometry_msgs
-	reflector_finder
 	ar_track_alvar_msgs
+	dynamic_reconfigure
 )
 
+include_directories(
+	include
+	${catkin_INCLUDE_DIRS})
+
+#add dynamic reconfigure api
+generate_dynamic_reconfigure_options(cfg/target_detector.cfg)
+
+# Package messages and services
 add_message_files(
 	DIRECTORY msg
 	FILES
@@ -38,10 +45,9 @@ catkin_package(CATKIN_DEPENDS
 	message_generation
 	tf2
 	tf2_ros
-	tf2_eigen
 	geometry_msgs
-	reflector_finder
 	ar_track_alvar_msgs
+	dynamic_reconfigure
 )
 
 ###########
@@ -54,17 +60,20 @@ include_directories(
 )
 
 ## ROS node
-#add_executable(target_detector
-#	src/target_detector.cpp
-#	src/target_detector_main.cpp
-#)
-#add_dependencies(target_detector
-#	${${PROJECT_NAME}_EXPORTED_TARGETS}
-#	${catkin_EXPORTED_TARGETS}
-#)
-#target_link_libraries(target_detector
-#	${catkin_LIBRARIES}
-#)
+add_executable(${PROJECT_NAME}
+	src/cluster.cpp
+	src/detector_reflector.cpp
+	src/node.cpp
+	src/main.cpp
+)
+add_dependencies(${PROJECT_NAME}
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(${PROJECT_NAME}
+	${catkin_LIBRARIES}
+)
+
 
 ## Tests
 add_executable(test_cluster
@@ -84,12 +93,12 @@ add_executable(test_detector_reflector
 ## Install ##
 #############
 
-#install(
-#	TARGETS target_detector
-#	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#)
+install(
+	TARGETS target_detector
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 install(
 	TARGETS test_cluster test_detector_reflector

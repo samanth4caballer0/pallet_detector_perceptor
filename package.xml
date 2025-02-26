@@ -25,9 +25,8 @@
 	<depend>message_generation</depend>
 	<depend>tf2</depend>
 	<depend>tf2_ros</depend>
-	<depend>tf2_eigen</depend>
 	<depend>geometry_msgs</depend>
-	<depend>reflector_finder</depend>
 	<depend>ar_track_alvar_msgs</depend>
+	<depend>dynamic_reconfigure</depend>
 
 </package>
