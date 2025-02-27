@@ -1,0 +1,117 @@
+#include "target_detector/detector_column.h"
+
+namespace TargetDetector
+{
+
+DetectorColumn::DetectorColumn()
+{
+	//
+}
+
+DetectorColumn::~DetectorColumn()
+{
+	//
+}
+
+bool DetectorColumn::configure(const std::map<std::string, double> & __params)
+{
+	// set config parameters
+	if (__params.count("column_size") != 0 )
+		column_size__ = __params.at("column_size");
+	else
+		column_size__ = 0.5;
+
+	if (__params.count("max_column_range") != 0 )
+		max_column_range__ = __params.at("max_column_range");
+	else
+		max_column_range__ = 25;
+
+	return true;
+}
+
+DetectorType DetectorColumn::type() const
+{
+	return COLUMN;
+}
+
+bool DetectorColumn::detect(
+	const double & __angle_init,
+	const double & __angle_end,
+	const std::vector<float> & __ranges,
+	const std::vector<float> & __intensities,
+	const Eigen::Isometry2d & __T_platform_sensor,
+	std::vector<double> & __detections)
+{
+	// check empty conditions
+	if ( __ranges.empty() )
+		return false;
+
+	// precomputes fixed part involving tangent
+	double angle_increment = ( __angle_end - __angle_init ) / __ranges.size();
+	double tan_res_x2 = 2.*std::tan(std::fabs(angle_increment)/2.);
+
+	// do clustering
+	std::vector<Cluster> clusters;
+	bool in_cluster;
+	double clustering_distance;
+	double azimuth;
+	Eigen::Vector2d point_in_lidar;
+	for ( unsigned int ii = 0; ii < __ranges.size(); ii++ )
+	{
+		if ( __ranges[ii] < max_column_range__ )
+		{
+			// From polar to cartesian coordinates in sensor frame
+			azimuth = __angle_init + ii*angle_increment;
+			point_in_lidar.x() = __ranges[ii] * std::cos( azimuth );
+			point_in_lidar.y() = __ranges[ii] * std::sin( azimuth );
+
+			// computes clustering distance according scan data, +delta to take into account typical range noise
+			clustering_distance = __ranges[ii]*tan_res_x2+0.02;
+
+			// clustering
+			in_cluster = false;
+			for ( auto & cluster : clusters )
+			{
+				if ( cluster.belongsBackPoint(point_in_lidar, clustering_distance) )
+				{
+					cluster.addPoint(point_in_lidar, 0.0); // intensity 0, not taken into account here
+					in_cluster = true;
+					break;
+				}
+			}
+			if ( !in_cluster )
+			{
+				clusters.push_back(Cluster(point_in_lidar, __intensities[ii]));
+			}
+		}
+	}
+
+	// Select clusters that can be columns
+	double reflector_aperture;
+	unsigned int min_support_points;
+	for ( auto & cluster : clusters )
+	{
+		// compute min_support_points
+		reflector_aperture = 2*std::atan2(column_size__/2.0 , cluster.range());
+		min_support_points = std::floor(column_size__ / angle_increment );
+		if (min_support_points < 10) min_support_points = 10;
+
+		// Only select clusters with supports within [min_support_points, 2*min_support_points]
+		if ( (cluster.size() > min_support_points) && (cluster.size() < 2*min_support_points ) )
+		{
+			// transform to robot frame
+			cluster.transform(__T_platform_sensor);
+			__detections.push_back((double)cluster.size());
+			__detections.push_back(cluster.intensity());
+			__detections.push_back(cluster.centroid().x());
+			__detections.push_back(cluster.centroid().y());
+			__detections.push_back(0.1); //cxx not yet computed
+			__detections.push_back(0.1); //cyy not yet computed
+		}
+	}
+
+	return true;
+}
+
+
+} // end of namespace

@@ -63,6 +63,7 @@ include_directories(
 add_executable(${PROJECT_NAME}
 	src/cluster.cpp
 	src/detector_reflector.cpp
+	src/detector_column.cpp
 	src/node.cpp
 	src/main.cpp
 )
@@ -88,6 +89,11 @@ add_executable(test_detector_reflector
 	src/tests/test_detector_reflector.cpp
 )
 
+add_executable(test_detector_column
+	src/cluster.cpp
+	src/detector_column.cpp
+	src/tests/test_detector_column.cpp
+)
 
 #############
 ## Install ##
@@ -101,7 +107,7 @@ install(
 )
 
 install(
-	TARGETS test_cluster test_detector_reflector
+	TARGETS test_cluster test_detector_reflector test_detector_column
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
