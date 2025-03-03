@@ -16,13 +16,13 @@ DetectorColumn::~DetectorColumn()
 bool DetectorColumn::configure(const std::map<std::string, double> & __params)
 {
 	// set config parameters
-	if (__params.count("column_size") != 0 )
-		column_size__ = __params.at("column_size");
+	if (__params.count("target_size") != 0 )
+		column_size__ = __params.at("target_size");
 	else
 		column_size__ = 0.5;
 
-	if (__params.count("max_column_range") != 0 )
-		max_column_range__ = __params.at("max_column_range");
+	if (__params.count("max_target_range") != 0 )
+		max_column_range__ = __params.at("max_target_range");
 	else
 		max_column_range__ = 25;
 
@@ -87,13 +87,13 @@ bool DetectorColumn::detect(
 	}
 
 	// Select clusters that can be columns
-	double reflector_aperture;
+	double column_aperture;
 	unsigned int min_support_points;
 	for ( auto & cluster : clusters )
 	{
 		// compute min_support_points
-		reflector_aperture = 2*std::atan2(column_size__/2.0 , cluster.range());
-		min_support_points = std::floor(column_size__ / angle_increment );
+		column_aperture = 2*std::atan2(column_size__/2.0 , cluster.range());
+		min_support_points = std::floor(column_aperture / angle_increment );
 		if (min_support_points < 10) min_support_points = 10;
 
 		// Only select clusters with supports within [min_support_points, 2*min_support_points]
@@ -108,6 +108,12 @@ bool DetectorColumn::detect(
 			__detections.push_back(0.1); //cxx not yet computed
 			__detections.push_back(0.1); //cyy not yet computed
 		}
+
+		// debug
+		std::cout << "column_aperture: " << column_aperture << std::endl;
+		std::cout << "min_support_points: " << min_support_points << std::endl;
+		cluster.print();
+
 	}
 
 	return true;

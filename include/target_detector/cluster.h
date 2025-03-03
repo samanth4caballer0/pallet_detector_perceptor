@@ -70,7 +70,7 @@ class Cluster
 
 		// prints cluster info
 		// __verbose: if true, all points are printed
-		void print(bool __verbose) const;
+		void print(bool __verbose = false) const;
 
 	protected:
 

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 	tf2
 	tf2_ros
 	geometry_msgs
+	visualization_msgs
 	ar_track_alvar_msgs
 	dynamic_reconfigure
 )
@@ -46,6 +47,7 @@ catkin_package(CATKIN_DEPENDS
 	tf2
 	tf2_ros
 	geometry_msgs
+	visualization_msgs
 	ar_track_alvar_msgs
 	dynamic_reconfigure
 )

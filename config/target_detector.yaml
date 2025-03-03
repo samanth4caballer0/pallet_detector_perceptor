@@ -1,3 +1,4 @@
+vizbose: true
 lidars: ["lidar"]
 scan_type: "sensor_msgs/LaserScan"
 robot_frame: "platform"

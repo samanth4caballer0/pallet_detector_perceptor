@@ -20,12 +20,12 @@ bool DetectorReflector::configure(const std::map<std::string, double> & __params
 		min_reflector_intensity__ = __params.at("min_reflector_intensity");
 	else
 		min_reflector_intensity__ = 50.;
-	if (__params.count("reflector_width") != 0 )
-		reflector_width__ = __params.at("reflector_width");
+	if (__params.count("target_size") != 0 )
+		reflector_width__ = __params.at("target_size");
 	else
 		reflector_width__ = 0.06;
-	if (__params.count("max_reflector_range") != 0 )
-		max_reflector_range__ = __params.at("max_reflector_range");
+	if (__params.count("max_target_range") != 0 )
+		max_reflector_range__ = __params.at("max_target_range");
 	else
 		max_reflector_range__ = 25;
 
@@ -112,7 +112,7 @@ bool DetectorReflector::detect(
 		if ( cluster.size() >= min_support_points)
 		{
 			// transform to robot frame
-			cluster.transform(__T_platform_sensor); 
+			cluster.transform(__T_platform_sensor);
 			__detections.push_back((double)cluster.size());
 			__detections.push_back(cluster.intensity());
 			__detections.push_back(cluster.centroid().x());
