@@ -23,14 +23,30 @@ const std::vector<Eigen::Vector2d> & Cluster::points() const
 	return points__;
 }
 
-unsigned int Cluster::size() const
+unsigned int Cluster::supports() const
 {
 	return points__.size();
+}
+
+double Cluster::size() const
+{
+	return (points__.back() - points__.front()).norm();
 }
 
 const Eigen::Vector2d & Cluster::centroid() const
 {
 	return centroid__;
+}
+
+Eigen::Vector2d Cluster::centroid(const double & __delta_range) const
+{
+	Eigen::Vector2d cc; //corrected centroid
+	double range, azimuth;
+	azimuth = this->azimuth();
+	range = this->range();
+	cc.x() = (range + __delta_range)*std::cos(azimuth);
+	cc.y() = (range + __delta_range)*std::sin(azimuth);
+	return cc;
 }
 
 double Cluster::intensity() const
@@ -41,6 +57,11 @@ double Cluster::intensity() const
 double Cluster::range() const
 {
 	return std::sqrt(centroid__.x()*centroid__.x() + centroid__.y()*centroid__.y());
+}
+
+double Cluster::azimuth() const
+{
+	return std::atan2(centroid__.y(), centroid__.x());
 }
 
 bool Cluster::belongsCentroid(const Eigen::Vector2d & __point, const double & __belonging_distance) const
@@ -57,7 +78,8 @@ bool Cluster::belongsBackPoint(const Eigen::Vector2d & __point, const double & _
 	if ( points__.empty() )
 		return false;
 
-	double distance_squared = ((__point.x()-points__.back().x()) * (__point.x()-points__.back().x())) + ((__point.y()-points__.back().y()) * (__point.y()-points__.back().y()));
+	//double distance_squared = ((__point.x()-points__.back().x()) * (__point.x()-points__.back().x())) + ((__point.y()-points__.back().y()) * (__point.y()-points__.back().y()));
+	double distance_squared = (__point - points__.back()).squaredNorm();
 	return ( distance_squared < __belonging_distance*__belonging_distance );
 }
 
@@ -95,8 +117,8 @@ void Cluster::transform(const Eigen::Isometry2d & __T)
 
 void Cluster::print(bool __verbose) const
 {
-	std::cout << "size: " << this->size() << std::endl;
 	std::cout << "centroid: " << centroid__.transpose() << std::endl;
+	std::cout << "size: " << this->size() << std::endl;
 	std::cout << "intensity: " << intensity__ << std::endl;
 	if (__verbose)
 	{

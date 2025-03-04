@@ -100,7 +100,6 @@ bool DetectorReflector::detect(
 	// Filter out clusters without enough supports
 	double reflector_aperture;
 	unsigned int min_support_points;
-	//std::cout << __LINE__ << ":  clusters.size(): " << clusters.size() << std::endl << std::endl;
 	for ( auto & cluster : clusters )
 	{
 		// compute min_support_points
@@ -109,11 +108,11 @@ bool DetectorReflector::detect(
 		if (min_support_points < 3) min_support_points = 3;
 
 		// Only publish clusters with enough supports
-		if ( cluster.size() >= min_support_points)
+		if ( cluster.supports() >= min_support_points)
 		{
 			// transform to robot frame
 			cluster.transform(__T_platform_sensor);
-			__detections.push_back((double)cluster.size());
+			__detections.push_back((double)cluster.supports());
 			__detections.push_back(cluster.intensity());
 			__detections.push_back(cluster.centroid().x());
 			__detections.push_back(cluster.centroid().y());

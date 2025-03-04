@@ -231,7 +231,7 @@ void Node::publishDetections(const std_msgs::Header & __header)
 				msg.detections[ii].pose.covariance[0] = detections__[ii*6+4];
 				msg.detections[ii].pose.covariance[7] = detections__[ii*6+5];
 				msg.detections[ii].intensity = detections__[ii*6+1];
-				msg.detections[ii].size = detections__[ii*6];
+				msg.detections[ii].supports = detections__[ii*6];
 				msg.detections[ii].baseline = 0.;
 			}
 			break;

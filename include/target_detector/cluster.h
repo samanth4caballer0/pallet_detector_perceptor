@@ -39,16 +39,25 @@ class Cluster
 		const std::vector<Eigen::Vector2d> & points() const;
 
 		// returns the number of points supporting this cluster
-		unsigned int size() const;
+		unsigned int supports() const;
 
-		// returns a cont reference to the centroid of this cluster
+		// returns the number of points supporting this cluster
+		double size() const;
+
+		// returns a const reference to the centroid of this cluster
 		const Eigen::Vector2d & centroid() const;
+
+		// returns a copy of a corrected centroid in range
+		Eigen::Vector2d centroid(const double & __delta_range) const;
 
 		// returns mean intensity
 		double intensity() const;
 
-		// return the ramge of the centroid
+		// return the range of the centroid, [m]
 		double range() const;
+
+		// return the azimuth in [-pi, pi], [rad]
+		double azimuth() const;
 
 		// check if __point belongs to this cluster, according to the point to centroid distance
 		bool belongsCentroid(const Eigen::Vector2d & __point, const double & __belonging_distance) const;

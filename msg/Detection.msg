@@ -8,10 +8,10 @@ geometry_msgs/PoseWithCovariance pose
 float64 intensity
 
 # number of support points for cluster based detectors
-uint32 size
+uint32 supports
 
 # support points for cluster based detectors
-geometry_msgs/Point[] supports
+geometry_msgs/Point[] points
 
 # baseline for reflector pair detector
 float64 baseline

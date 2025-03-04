@@ -49,6 +49,7 @@ bool DetectorColumn::detect(
 	// precomputes fixed part involving tangent
 	double angle_increment = ( __angle_end - __angle_init ) / __ranges.size();
 	double tan_res_x2 = 2.*std::tan(std::fabs(angle_increment)/2.);
+	//std::cout << "tan_res_x2: " << tan_res_x2 << std::endl;
 
 	// do clustering
 	std::vector<Cluster> clusters;
@@ -66,7 +67,7 @@ bool DetectorColumn::detect(
 			point_in_lidar.y() = __ranges[ii] * std::sin( azimuth );
 
 			// computes clustering distance according scan data, +delta to take into account typical range noise
-			clustering_distance = __ranges[ii]*tan_res_x2+0.02;
+			clustering_distance = __ranges[ii]*tan_res_x2 + 0.02;
 
 			// clustering
 			in_cluster = false;
@@ -89,6 +90,7 @@ bool DetectorColumn::detect(
 	// Select clusters that can be columns
 	double column_aperture;
 	unsigned int min_support_points;
+	Eigen::Vector2d corrected_centroid;
 	for ( auto & cluster : clusters )
 	{
 		// compute min_support_points
@@ -97,24 +99,29 @@ bool DetectorColumn::detect(
 		if (min_support_points < 10) min_support_points = 10;
 
 		// Only select clusters with supports within [min_support_points, 2*min_support_points]
-		if ( (cluster.size() > min_support_points) && (cluster.size() < 2*min_support_points ) )
+		if ( 	(cluster.supports() > min_support_points) &&
+				(cluster.size() < column_size__*1.5 ) ) // 1.5 slightly greater than sqrt(2), to account for the diagonal
 		{
 			// transform to robot frame
 			cluster.transform(__T_platform_sensor);
-			__detections.push_back((double)cluster.size());
-			__detections.push_back(cluster.intensity());
-			__detections.push_back(cluster.centroid().x());
-			__detections.push_back(cluster.centroid().y());
+			__detections.push_back((double)cluster.supports());
+			__detections.push_back(cluster.size());
+			corrected_centroid = cluster.centroid(column_size__/2.); //center of the column further than cluster centroid by approx d/3
+			__detections.push_back(corrected_centroid.x());
+			__detections.push_back(corrected_centroid.y());
 			__detections.push_back(0.1); //cxx not yet computed
 			__detections.push_back(0.1); //cyy not yet computed
+
+			// debug
+			//cluster.print();
+			//std::cout << "column_aperture: " << column_aperture*180./M_PI << std::endl;
+			//std::cout << "min_support_points: " << min_support_points << std::endl;
 		}
 
-		// debug
-		std::cout << "column_aperture: " << column_aperture << std::endl;
-		std::cout << "min_support_points: " << min_support_points << std::endl;
-		cluster.print();
 
 	}
+	// debug
+	//std::cout << "------------------------" << std::endl << std::endl;
 
 	return true;
 }
