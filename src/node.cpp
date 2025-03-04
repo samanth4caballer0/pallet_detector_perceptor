@@ -216,6 +216,7 @@ void Node::publishDetections(const std_msgs::Header & __header)
 	switch( detector__->type() )
 	{
 		case REFLECTOR:
+		case COLUMN:
 			msg.detections.resize( detections__.size() / 6 ); // each detection are 6 doubles
 			for (unsigned int ii=0; ii<msg.detections.size(); ii++)
 			{
@@ -247,27 +248,48 @@ void Node::publishMarkers(const std_msgs::Header & __header)
 {
 	visualization_msgs::Marker msg;
 
+	// fill common parts of the message
+	msg.header = __header; // keep the time stamp from the original header
+	msg.header.frame_id = robot_frame__;
+	msg.id = 0;
+	msg.action = visualization_msgs::Marker::ADD;
+	msg.lifetime = ros::Duration(0.5);
+
+	// fill default values of the message
+	msg.pose.orientation.x = 0.;
+	msg.pose.orientation.y = 0.;
+	msg.pose.orientation.z = 0.;
+	msg.pose.orientation.w = 1.;
+	msg.scale.x = 0.3;
+	msg.scale.y = 0.3;
+	msg.scale.z = 0.3;
+
 	// fill the message according the detector type
 	switch( detector__->type() )
 	{
 		case REFLECTOR:
-			msg.header = __header; // keep the time stamp from the original header
-			msg.header.frame_id = robot_frame__;
-			msg.id = 0;
 			msg.ns = "reflectors";
 			msg.type = visualization_msgs::Marker::SPHERE_LIST;
-			msg.action = visualization_msgs::Marker::ADD;
-			msg.lifetime = ros::Duration(0.5);
-			msg.pose.orientation.x = 0.;
-			msg.pose.orientation.y = 0.;
-			msg.pose.orientation.z = 0.;
-			msg.pose.orientation.w = 1.;
-			msg.scale.x = 0.3;
-			msg.scale.y = 0.3;
-			msg.scale.z = 0.3;
 			msg.color.r = 1.0;
 			msg.color.g = 1.0;
 			msg.color.b = 0.0;
+			msg.color.a = 0.75;
+			msg.points.resize( detections__.size() / 6 ); // each detection are 6 doubles
+			for (unsigned int ii=0; ii<msg.points.size(); ii++)
+			{
+				//position according [size, intensity, x0,y0,cxx0,cyy0, ... ]
+				msg.points[ii].x = detections__[ii*6+2];
+				msg.points[ii].y = detections__[ii*6+3];
+				msg.points[ii].z = 0.;
+			}
+			break;
+
+		case COLUMN:
+			msg.ns = "columns";
+			msg.type = visualization_msgs::Marker::SPHERE_LIST;
+			msg.color.r = 0.0;
+			msg.color.g = 1.0;
+			msg.color.b = 1.0;
 			msg.color.a = 0.75;
 			msg.points.resize( detections__.size() / 6 ); // each detection are 6 doubles
 			for (unsigned int ii=0; ii<msg.points.size(); ii++)
