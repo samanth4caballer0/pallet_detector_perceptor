@@ -67,7 +67,7 @@ bool DetectorColumn::detect(
 			point_in_lidar.y() = __ranges[ii] * std::sin( azimuth );
 
 			// computes clustering distance according scan data, +delta to take into account typical range noise
-			clustering_distance = __ranges[ii]*tan_res_x2 + 0.02;
+			clustering_distance = __ranges[ii]*tan_res_x2 + 0.05;
 
 			// clustering
 			in_cluster = false;
@@ -100,7 +100,7 @@ bool DetectorColumn::detect(
 
 		// Only select clusters with supports within [min_support_points, 2*min_support_points]
 		if ( 	(cluster.supports() > min_support_points) &&
-				(cluster.size() < column_size__*1.5 ) ) // 1.5 slightly greater than sqrt(2), to account for the diagonal
+				(cluster.size() < column_size__*2 ) ) //  slightly greater than sqrt(2), to account for the diagonal
 		{
 			// transform to robot frame
 			cluster.transform(__T_platform_sensor);
@@ -109,8 +109,8 @@ bool DetectorColumn::detect(
 			corrected_centroid = cluster.centroid(column_size__/2.); //center of the column further than cluster centroid by approx d/3
 			__detections.push_back(corrected_centroid.x());
 			__detections.push_back(corrected_centroid.y());
-			__detections.push_back(0.1); //cxx not yet computed
-			__detections.push_back(0.1); //cyy not yet computed
+			__detections.push_back(0.25); //cxx not yet computed
+			__detections.push_back(0.25); //cyy not yet computed
 
 			// debug
 			//cluster.print();

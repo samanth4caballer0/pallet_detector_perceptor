@@ -221,6 +221,7 @@ void Node::publishDetections(const std_msgs::Header & __header)
 			for (unsigned int ii=0; ii<msg.detections.size(); ii++)
 			{
 				//[size, intensity, x0,y0,cxx0,cyy0, ... ]
+				msg.detections[ii].type = detector__->type();
 				msg.detections[ii].pose.pose.position.x = detections__[ii*6+2];
 				msg.detections[ii].pose.pose.position.y = detections__[ii*6+3];
 				msg.detections[ii].pose.pose.position.z = 0.;
