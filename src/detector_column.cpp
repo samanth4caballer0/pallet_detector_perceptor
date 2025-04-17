@@ -29,11 +29,6 @@ bool DetectorColumn::configure(const std::map<std::string, double> & __params)
 	return true;
 }
 
-DetectorType DetectorColumn::type() const
-{
-	return COLUMN;
-}
-
 bool DetectorColumn::detect(
 	const double & __angle_init,
 	const double & __angle_end,

@@ -25,9 +25,6 @@ class DetectorReflector : public DetectorLidar2d
 		// - __params: set of tuning parameters: name and double value
 		bool configure(const std::map<std::string, double> & __params);
 
-		// Returns detector type
-		DetectorType type() const;
-
 		// Detect reflectors.
 		// Input argument details in DetectorLidar2d base class
 		// Output argument __detections is a concatenation of 6 doubles: [size, intensity, x0,y0,cxx0,cyy0, ... ]

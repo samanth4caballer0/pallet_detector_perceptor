@@ -13,6 +13,7 @@
 #include <visualization_msgs/Marker.h>
 #include <dynamic_reconfigure/server.h>
 #include <sick_safetyscanners/ExtendedLaserScanMsg.h>
+#include <ar_track_alvar_msgs/AlvarMarkers.h>
 
 // this package
 #include "target_detector/detector_reflector.h"
@@ -30,6 +31,7 @@ class Node
 		// ROS API
 		ros::NodeHandle nh__;
 		std::vector<ros::Subscriber> lidar_subscribers__;
+		ros::Subscriber alvar_markers_subscriber__;
 		ros::Publisher detetctor_publisher__;
 		ros::Publisher viz_marker_publisher__;
 		dynamic_reconfigure::Server<target_detector::target_detectorConfig> reconfigure_server__;
@@ -38,6 +40,7 @@ class Node
 		std::mutex reconfigure_mutex__;
 
 		// config node parameters
+		uint8_t detector_type__;
 		std::string robot_frame__;
 		std::map<std::string, double> detector_params__;
 
@@ -48,7 +51,6 @@ class Node
 		std::map<std::string, Eigen::Isometry2d> T_robot_to_lidar__;
 
 		// Detector and detections
-		//TargetDetector::DetectorReflector detector__;
 		std::shared_ptr<DetectorLidar2d> detector__;
 		std::vector<double> detections__;
 

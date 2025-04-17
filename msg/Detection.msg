@@ -1,5 +1,15 @@
+uint8 TYPE_UNKNOWN = 0
+uint8 TYPE_REFLECTOR_FROM_INTENSITY = 1
+uint8 TYPE_REFLECTOR_FROM_BOOL = 2
+uint8 TYPE_REFLECTOR_PAIR = 3
+uint8 TYPE_COLUMN = 4
+uint8 TYPE_STRAIGHT_SEGMENT = 5
+uint8 TYPE_CORNER = 6
+uint8 TYPE_PALLET = 7
+uint8 TYPE_ALVAR = 8
+
 # detection type
-uint32 type
+uint8 type
 
 # pose and orientation of the detection
 geometry_msgs/PoseWithCovariance pose

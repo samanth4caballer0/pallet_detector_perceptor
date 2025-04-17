@@ -32,11 +32,6 @@ bool DetectorReflector::configure(const std::map<std::string, double> & __params
 	return true;
 }
 
-DetectorType DetectorReflector::type() const
-{
-	return REFLECTOR;
-}
-
 bool DetectorReflector::detect(
 	const double & __angle_init,
 	const double & __angle_end,

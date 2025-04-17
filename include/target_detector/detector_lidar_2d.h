@@ -21,9 +21,6 @@ class DetectorLidar2d : public DetectorBase
 		// - __params: set of tuning parameters: name and value
 		virtual bool configure(const std::map<std::string, double> & __params) = 0;
 
-		// Returns detector type
-		virtual DetectorType type() const = 0;
-
 		// detect targets in range scan data
 		// - __angle_init: angle of the first scan point [rad]
 		// - __angle_end: angle of the last scan point [rad]

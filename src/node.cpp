@@ -17,40 +17,30 @@ bool Node::init()
 {
 	// get params
 	std::vector<std::string> lidars;
-	std::string scan_type;
-	int detector_type;
+	int int_param;
 	if ( !nh__.getParam("vizbose", vizbose__) )
 	{
 		ROS_ERROR("Failed to get vizbose parameter");
 		return false;
 	}
-	if ( !nh__.getParam("detector_type", detector_type) )
+	if ( !nh__.getParam("detector_type", int_param) )
 	{
-		ROS_ERROR_STREAM("Failed to get BMS detector_type");
+		ROS_ERROR_STREAM("Failed to get detector_type");
 		return false;
 	}
-	if ( !nh__.getParam("lidars", lidars) )
+	else
 	{
-		ROS_ERROR("Failed to get lidars parameter");
-		return false;
+		detector_type__ = (uint8_t)int_param;
 	}
 	if ( !nh__.getParam("robot_frame", robot_frame__) )
 	{
 		ROS_ERROR("Failed to get robot_frame parameter");
 		return false;
 	}
-	if ( !nh__.getParam("scan_type", scan_type) )
+	if ( !nh__.getParam("lidars", lidars) )
 	{
-		ROS_ERROR("Failed to get scan_type parameter");
+		ROS_ERROR("Failed to get lidars parameter");
 		return false;
-	}
-	if ( scan_type == "sensor_msgs/LaserScan" ) // if the laser message is the standard, the reflector intensity threshold is required
-	{
-		if ( !nh__.getParam("min_reflector_intensity", detector_params__["min_reflector_intensity"]) )
-		{
-			ROS_ERROR("Failed to get min_reflector_intensity");
-			return false;
-		}
 	}
 	if ( !nh__.getParam("target_size", detector_params__["target_size"]) )
 	{
@@ -63,38 +53,59 @@ bool Node::init()
 		return false;
 	}
 
-	// create the detector according detector_type
-	switch ( detector_type )
+	// create the detector according detector_type__
+	switch ( detector_type__ )
 	{
-		case REFLECTOR:
-			ROS_INFO("Creating a DetectorReflector.");
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY:
+			ROS_INFO("Creating a DetectorReflectorFromIntensity.");
+			if ( !nh__.getParam("min_reflector_intensity", detector_params__["min_reflector_intensity"]) )
+			{
+				ROS_ERROR("Failed to get min_reflector_intensity");
+				return false;
+			}
+			for ( auto & lidar : lidars )
+			{
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
+			}
 			detector__ = std::make_shared<DetectorReflector>();
 			break;
-		case REFLECTOR_PAIR:
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_BOOL:
+			ROS_INFO("Creating a DetectorReflectorFromBool.");
+			for ( auto & lidar : lidars )
+			{
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::extendedLaserScanCallback, this));
+			}
+			detector__ = std::make_shared<DetectorReflector>();
+			break;
+		case target_detector::Detection::TYPE_REFLECTOR_PAIR:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
-		case COLUMN:
+		case target_detector::Detection::TYPE_COLUMN:
 			ROS_INFO("Creating a DetectorColumn.");
+			for ( auto & lidar : lidars )
+			{
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
+			}
 			detector__ = std::make_shared<DetectorColumn>();
 			break;
-		case STRAIGHT_SEGMENT:
+		case target_detector::Detection::TYPE_STRAIGHT_SEGMENT:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
-		case CORNER:
+		case target_detector::Detection::TYPE_CORNER:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
-		case PALLET:
+		case target_detector::Detection::TYPE_PALLET:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
-		case ALVAR:
+		case target_detector::Detection::TYPE_ALVAR:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
-		case UNKNOWN:
+		case target_detector::Detection::TYPE_UNKNOWN:
 		default:
 			ROS_ERROR("Unknown detector type. Exit.");
 			return false;
@@ -104,20 +115,12 @@ bool Node::init()
 	// configure detector
 	detector__->configure(detector_params__);
 
-	// subscribe to lidar topics, according scan_type
-	for ( auto & lidar : lidars )
-	{
-		if ( scan_type == "sensor_msgs/LaserScan" )
-			lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
-		else if ( scan_type == "sick_safetyscanners/ExtendedLaserScanMsg" )
-			lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::extendedLaserScanCallback, this));
-		else
-			return false;
-	}
-
 	// publishers
 	detetctor_publisher__ = nh__.advertise<target_detector::Detections>( "detections", 1, true );
-	if ( vizbose__ ) viz_marker_publisher__ = nh__.advertise<visualization_msgs::Marker>( "viz_markers", 1, true );
+	if ( vizbose__ )
+	{
+		viz_marker_publisher__ = nh__.advertise<visualization_msgs::Marker>( "viz_markers", 1, true );
+	}
 
 	// reconfigure service
 	reconfigure_callback__ = boost::bind(&Node::reconfigureCallback, this, _1, _2);
@@ -213,15 +216,16 @@ void Node::publishDetections(const std_msgs::Header & __header)
 	msg.header.frame_id = robot_frame__;
 
 	// fill the message according the detector type
-	switch( detector__->type() )
+	switch( detector_type__ )
 	{
-		case REFLECTOR:
-		case COLUMN:
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY:
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_BOOL:
+		case target_detector::Detection::TYPE_COLUMN:
 			msg.detections.resize( detections__.size() / 6 ); // each detection are 6 doubles
 			for (unsigned int ii=0; ii<msg.detections.size(); ii++)
 			{
 				//[size, intensity, x0,y0,cxx0,cyy0, ... ]
-				msg.detections[ii].type = detector__->type();
+				msg.detections[ii].type = detector_type__;
 				msg.detections[ii].pose.pose.position.x = detections__[ii*6+2];
 				msg.detections[ii].pose.pose.position.y = detections__[ii*6+3];
 				msg.detections[ii].pose.pose.position.z = 0.;
@@ -266,9 +270,10 @@ void Node::publishMarkers(const std_msgs::Header & __header)
 	msg.scale.z = 0.3;
 
 	// fill the message according the detector type
-	switch( detector__->type() )
+	switch( detector_type__ )
 	{
-		case REFLECTOR:
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY:
+		case target_detector::Detection::TYPE_REFLECTOR_FROM_BOOL:
 			msg.ns = "reflectors";
 			msg.type = visualization_msgs::Marker::SPHERE_LIST;
 			msg.color.r = 1.0;
@@ -285,7 +290,7 @@ void Node::publishMarkers(const std_msgs::Header & __header)
 			}
 			break;
 
-		case COLUMN:
+		case target_detector::Detection::TYPE_COLUMN:
 			msg.ns = "columns";
 			msg.type = visualization_msgs::Marker::SPHERE_LIST;
 			msg.color.r = 0.0;
