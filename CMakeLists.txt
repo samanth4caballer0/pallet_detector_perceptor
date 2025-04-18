@@ -62,18 +62,19 @@ include_directories(
 )
 
 ## ROS node
-add_executable(${PROJECT_NAME}
+add_executable(${PROJECT_NAME}_lidar_2d
 	src/cluster.cpp
 	src/detector_reflector.cpp
 	src/detector_column.cpp
-	src/node.cpp
-	src/main.cpp
+	src/node_base.cpp
+	src/node_lidar_2d.cpp
+	src/main_lidar_2d.cpp
 )
-add_dependencies(${PROJECT_NAME}
+add_dependencies(${PROJECT_NAME}_lidar_2d
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME}_lidar_2d
 	${catkin_LIBRARIES}
 )
 
@@ -102,7 +103,7 @@ add_executable(test_detector_column
 #############
 
 install(
-	TARGETS target_detector
+	TARGETS ${PROJECT_NAME}_lidar_2d
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

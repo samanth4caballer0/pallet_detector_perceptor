@@ -1,42 +1,28 @@
-#include "target_detector/node.h"
+#include "target_detector/node_lidar_2d.h"
 
 namespace TargetDetector
 {
 
-Node::Node() : nh__("~")
+NodeLidar2d::NodeLidar2d()
 {
 	//
 }
 
-Node::~Node()
+NodeLidar2d::~NodeLidar2d()
 {
 	//
 }
 
-bool Node::init()
+bool NodeLidar2d::init()
 {
-	// get params
+	// base init with common configs
+	if ( !NodeBase::init() )
+	{
+		return false;
+	}
+
+	// get params for lidar detectors
 	std::vector<std::string> lidars;
-	int int_param;
-	if ( !nh__.getParam("vizbose", vizbose__) )
-	{
-		ROS_ERROR("Failed to get vizbose parameter");
-		return false;
-	}
-	if ( !nh__.getParam("detector_type", int_param) )
-	{
-		ROS_ERROR_STREAM("Failed to get detector_type");
-		return false;
-	}
-	else
-	{
-		detector_type__ = (uint8_t)int_param;
-	}
-	if ( !nh__.getParam("robot_frame", robot_frame__) )
-	{
-		ROS_ERROR("Failed to get robot_frame parameter");
-		return false;
-	}
 	if ( !nh__.getParam("lidars", lidars) )
 	{
 		ROS_ERROR("Failed to get lidars parameter");
@@ -65,7 +51,7 @@ bool Node::init()
 			}
 			for ( auto & lidar : lidars )
 			{
-				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &NodeLidar2d::laserScanCallback, this));
 			}
 			detector__ = std::make_shared<DetectorReflector>();
 			break;
@@ -73,7 +59,7 @@ bool Node::init()
 			ROS_INFO("Creating a DetectorReflectorFromBool.");
 			for ( auto & lidar : lidars )
 			{
-				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::extendedLaserScanCallback, this));
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &NodeLidar2d::extendedLaserScanCallback, this));
 			}
 			detector__ = std::make_shared<DetectorReflector>();
 			break;
@@ -85,7 +71,7 @@ bool Node::init()
 			ROS_INFO("Creating a DetectorColumn.");
 			for ( auto & lidar : lidars )
 			{
-				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &Node::laserScanCallback, this));
+				lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &NodeLidar2d::laserScanCallback, this));
 			}
 			detector__ = std::make_shared<DetectorColumn>();
 			break;
@@ -94,14 +80,6 @@ bool Node::init()
 			return false;
 			break;
 		case target_detector::Detection::TYPE_CORNER:
-			ROS_ERROR("Detector type not yet implemented. Exit.");
-			return false;
-			break;
-		case target_detector::Detection::TYPE_PALLET:
-			ROS_ERROR("Detector type not yet implemented. Exit.");
-			return false;
-			break;
-		case target_detector::Detection::TYPE_ALVAR:
 			ROS_ERROR("Detector type not yet implemented. Exit.");
 			return false;
 			break;
@@ -116,28 +94,24 @@ bool Node::init()
 	detector__->configure(detector_params__);
 
 	// publishers
-	detetctor_publisher__ = nh__.advertise<target_detector::Detections>( "detections", 1, true );
 	if ( vizbose__ )
 	{
 		viz_marker_publisher__ = nh__.advertise<visualization_msgs::Marker>( "viz_markers", 1, true );
 	}
 
 	// reconfigure service
-	reconfigure_callback__ = boost::bind(&Node::reconfigureCallback, this, _1, _2);
+	reconfigure_callback__ = boost::bind(&NodeLidar2d::reconfigureCallback, this, _1, _2);
 	reconfigure_server__.setCallback(reconfigure_callback__);
-
-	// tf 2
-	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
 	return true;
 }
 
-void Node::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
+void NodeLidar2d::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 {
 	// check if platform->lidar transform exists, and save it if not
 	if ( !saveLidarTransform(__scan_ptr->header) )
 	{
-		ROS_WARN("Node::laserScanCallback(): scan not processed because missing tf");
+		ROS_WARN("NodeLidar2d::laserScanCallback(): scan not processed because missing tf");
 	}
 	detections__.clear();
 	reconfigure_mutex__.lock();
@@ -146,14 +120,14 @@ void Node::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 		__scan_ptr->angle_max,
 		__scan_ptr->ranges,
 		__scan_ptr->intensities,
-		T_robot_to_lidar__[__scan_ptr->header.frame_id],
+		T_robot_to_sensor__[__scan_ptr->header.frame_id],
 		detections__);
 	reconfigure_mutex__.unlock();
 	publishDetections(__scan_ptr->header);
 	if ( vizbose__ ) publishMarkers(__scan_ptr->header);
 }
 
-void Node::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr)
+void NodeLidar2d::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr)
 {
 /*	std::vector<bool> reflector_hits;
 	for ( auto & reflector_status : __extended_scan_ptr->reflektor_status )
@@ -161,7 +135,7 @@ void Node::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserSca
 	findReflectors(reflector_hits, __extended_scan_ptr->laser_scan);*/
 }
 
-void Node::reconfigureCallback(target_detector::target_detectorConfig & __config, uint32_t __level)
+void NodeLidar2d::reconfigureCallback(target_detector::target_detectorConfig & __config, uint32_t __level)
 {
 	// we want to keep the params in the yaml, so avoid taking defaults from dynamic reconfigure
 	if ( first_dynamic_reconfigure__ )
@@ -178,36 +152,7 @@ void Node::reconfigureCallback(target_detector::target_detectorConfig & __config
 	reconfigure_mutex__.unlock();
 }
 
-bool Node::saveLidarTransform(const std_msgs::Header & __header)
-{
- 	geometry_msgs::TransformStamped Trl; // from robot to lidar
-	double angle_z;
-	// if frame_id not already in the transforms map, keep it
-	if ( T_robot_to_lidar__.find(__header.frame_id) == T_robot_to_lidar__.end() )
-	{
-		try
-		{
-			//T_lidar_to_robot__[__header.frame_id] = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
-			Trl = tf_buffer__.lookupTransform(__header.frame_id, robot_frame__, __header.stamp, ros::Duration(1.0));
-
-			// convert to Eigen::Isometry2d
-			angle_z = 2*std::atan2(Trl.transform.rotation.z, Trl.transform.rotation.w);
-			T_robot_to_lidar__[__header.frame_id].matrix() <<
-				std::cos(angle_z), -std::sin(angle_z), Trl.transform.translation.x,
-				std::sin(angle_z),  std::cos(angle_z), Trl.transform.translation.y,
-				0,0,1;
-		}
-		catch (tf2::TransformException & __ex)
-		{
-			ROS_WARN("%s", __ex.what());
-			ros::Duration(1.0).sleep();
-			return false;
-		}
-	}
-	return true;
-}
-
-void Node::publishDetections(const std_msgs::Header & __header)
+void NodeLidar2d::publishDetections(const std_msgs::Header & __header)
 {
 	target_detector::Detections msg;
 
@@ -246,10 +191,10 @@ void Node::publishDetections(const std_msgs::Header & __header)
 	}
 
 	// publish message
-	detetctor_publisher__.publish(msg);
+	detector_publisher__.publish(msg);
 }
 
-void Node::publishMarkers(const std_msgs::Header & __header)
+void NodeLidar2d::publishMarkers(const std_msgs::Header & __header)
 {
 	visualization_msgs::Marker msg;
 

@@ -1,10 +1,14 @@
 #ifndef TARGET_DETECTOR__DETECTOR_BASE_H
 #define TARGET_DETECTOR__DETECTOR_BASE_H
 
-// eigen
+// std
 #include <iostream>
 #include <string>
 #include <map>
+
+// eigen
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
 
 namespace TargetDetector
 {
