@@ -109,9 +109,10 @@ bool NodeLidar2d::init()
 void NodeLidar2d::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 {
 	// check if platform->lidar transform exists, and save it if not
-	if ( !saveLidarTransform(__scan_ptr->header) )
+	if ( !saveSensorTransform(__scan_ptr->header) )
 	{
 		ROS_WARN("NodeLidar2d::laserScanCallback(): scan not processed because missing tf");
+		return;
 	}
 	detections__.clear();
 	reconfigure_mutex__.lock();
@@ -120,7 +121,7 @@ void NodeLidar2d::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __sca
 		__scan_ptr->angle_max,
 		__scan_ptr->ranges,
 		__scan_ptr->intensities,
-		T_robot_to_sensor__[__scan_ptr->header.frame_id],
+		T_robot_to_sensor_2d__[__scan_ptr->header.frame_id],
 		detections__);
 	reconfigure_mutex__.unlock();
 	publishDetections(__scan_ptr->header);
@@ -171,6 +172,7 @@ void NodeLidar2d::publishDetections(const std_msgs::Header & __header)
 			{
 				//[size, intensity, x0,y0,cxx0,cyy0, ... ]
 				msg.detections[ii].type = detector_type__;
+				msg.detections[ii].id = -1; // no id
 				msg.detections[ii].pose.pose.position.x = detections__[ii*6+2];
 				msg.detections[ii].pose.pose.position.y = detections__[ii*6+3];
 				msg.detections[ii].pose.pose.position.z = 0.;

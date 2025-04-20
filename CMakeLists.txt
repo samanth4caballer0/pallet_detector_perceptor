@@ -61,7 +61,7 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 )
 
-## ROS node
+## ROS nodes
 add_executable(${PROJECT_NAME}_lidar_2d
 	src/cluster.cpp
 	src/detector_reflector.cpp
@@ -75,6 +75,19 @@ add_dependencies(${PROJECT_NAME}_lidar_2d
 	${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(${PROJECT_NAME}_lidar_2d
+	${catkin_LIBRARIES}
+)
+
+add_executable(${PROJECT_NAME}_alvar
+	src/node_base.cpp
+	src/node_alvar.cpp
+	src/main_alvar.cpp
+)
+add_dependencies(${PROJECT_NAME}_alvar
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(${PROJECT_NAME}_alvar
 	${catkin_LIBRARIES}
 )
 
@@ -103,7 +116,7 @@ add_executable(test_detector_column
 #############
 
 install(
-	TARGETS ${PROJECT_NAME}_lidar_2d
+	TARGETS ${PROJECT_NAME}_lidar_2d ${PROJECT_NAME}_alvar
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

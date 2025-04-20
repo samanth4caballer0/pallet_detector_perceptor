@@ -11,6 +11,10 @@ uint8 TYPE_ALVAR = 8
 # detection type
 uint8 type
 
+# some detections have an associated id (AR markers, object class ,... )
+# If no id, set to -1
+int32 id
+
 # pose and orientation of the detection
 geometry_msgs/PoseWithCovariance pose
 

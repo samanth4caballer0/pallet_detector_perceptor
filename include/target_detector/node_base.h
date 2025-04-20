@@ -37,7 +37,8 @@ class NodeBase
 		// tf
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, Eigen::Isometry2d> T_robot_to_sensor__;
+		std::map<std::string, Eigen::Isometry3d> T_robot_to_sensor__;
+		std::map<std::string, Eigen::Isometry2d> T_robot_to_sensor_2d__;
 
 	public:
 
@@ -47,7 +48,7 @@ class NodeBase
 
 	protected:
 
-		bool saveLidarTransform(const std_msgs::Header & __header);
+		bool saveSensorTransform(const std_msgs::Header & __header);
 };
 
 }
