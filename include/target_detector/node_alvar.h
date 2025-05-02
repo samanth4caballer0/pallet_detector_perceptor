@@ -5,7 +5,6 @@
 #include <memory>
 
 // ros
-#include <visualization_msgs/Marker.h>
 #include <ar_track_alvar_msgs/AlvarMarkers.h>
 
 // this package
@@ -21,7 +20,6 @@ class NodeAlvar : public NodeBase
 
 		// ROS API
 		ros::Subscriber alvar_markers_subscriber__;
-		ros::Publisher viz_marker_publisher__;
 
 	public:
 
@@ -34,7 +32,7 @@ class NodeAlvar : public NodeBase
 		// just transform to robot_frame and republish as alvars msg
 		void alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg);
 		void publishDetections(const std_msgs::Header & __header);
-		void publishMarkers(const std_msgs::Header & __header);
+		void publishMarkers(const target_detector::Detections & __msg);
 };
 
 }

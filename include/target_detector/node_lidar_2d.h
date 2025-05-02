@@ -7,9 +7,7 @@
 // ros
 #include <sensor_msgs/LaserScan.h>
 #include <sick_safetyscanners/ExtendedLaserScanMsg.h>
-#include <visualization_msgs/Marker.h>
 #include <dynamic_reconfigure/server.h>
-//#include <ar_track_alvar_msgs/AlvarMarkers.h>
 
 // this package
 #include "target_detector/node_base.h"
@@ -26,8 +24,6 @@ class NodeLidar2d : public NodeBase
 
 		// ROS API
 		std::vector<ros::Subscriber> lidar_subscribers__;
-		ros::Subscriber alvar_markers_subscriber__;
-		ros::Publisher viz_marker_publisher__;
 		dynamic_reconfigure::Server<target_detector::target_detectorConfig> reconfigure_server__;
 		dynamic_reconfigure::Server<target_detector::target_detectorConfig>::CallbackType reconfigure_callback__;
 		bool first_dynamic_reconfigure__ = true;
