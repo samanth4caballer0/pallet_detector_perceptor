@@ -78,6 +78,9 @@ bool NodeBase::saveSensorTransform(const std_msgs::Header & __header)
 				std::cos(angle_z), -std::sin(angle_z), Trs.transform.translation.x,
 				std::sin(angle_z),  std::cos(angle_z), Trs.transform.translation.y,
 				0,0,1;
+
+			//std::cout << "Saved Transform from " << robot_frame__ << "to " << __header.frame_id << std::endl;
+			//std::cout << T_robot_to_sensor_2d__[__header.frame_id].matrix() << std::endl;
 		}
 		catch (tf2::TransformException & __ex)
 		{
@@ -86,6 +89,7 @@ bool NodeBase::saveSensorTransform(const std_msgs::Header & __header)
 			return false;
 		}
 	}
+
 	return true;
 }
 

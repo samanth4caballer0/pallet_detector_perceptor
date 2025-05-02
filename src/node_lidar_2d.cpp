@@ -90,14 +90,14 @@ bool NodeLidar2d::init()
 			break;
 	}
 
-	// configure detector
-	detector__->configure(detector_params__);
-
-	// publishers
+	// visuals
 	if ( vizbose__ )
 	{
-		viz_marker_publisher__ = nh__.advertise<visualization_msgs::Marker>( "viz_markers", 1, true );
+		viz_marker_publisher__ = nh__.advertise<visualization_msgs::Marker>( "visuals", 1, true );
 	}
+
+	// configure detector
+	detector__->configure(detector_params__);
 
 	// reconfigure service
 	reconfigure_callback__ = boost::bind(&NodeLidar2d::reconfigureCallback, this, _1, _2);
