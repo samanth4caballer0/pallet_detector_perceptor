@@ -58,7 +58,7 @@ bool NodeBase::saveSensorTransform(const std_msgs::Header & __header)
 		try
 		{
 			// get transform from tf
-			Trs = tf_buffer__.lookupTransform(__header.frame_id, robot_frame__, __header.stamp, ros::Duration(1.0));
+			Trs = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
 
 			// convert to Eigen Isometry3d
 			aux_qt.coeffs() <<
