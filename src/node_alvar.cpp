@@ -46,9 +46,6 @@ void NodeAlvar::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg)
 		return;
 	}
 
-	//devel:  trying other ext calibration
-	// T_robot_to_sensor__[__msg.markers[0].header.frame_id].translation() << 0.10, -0.02, 0.21;
-
 	// Out message, keep the time stamp from the original header
 	target_detector::Detections msg;
 	msg.header = __msg.markers[0].header;
@@ -79,7 +76,7 @@ void NodeAlvar::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg)
 
 		// 3. Set the covariance in camera range-bearing space
 		Crb <<
-			0.05*0.05*std::pow(range,4), 0., // std_dev = 0.05r^2
+			0.02*0.02 + 0.05*0.05*std::pow(range,4), 0., // var = 0.02^2+0.05^2r^4
 			0., std::pow(2*M_PI/180.,2); // std dev 2 deg
 
 		// 4. Compute the Jacobian wrt range and bearing
@@ -93,11 +90,10 @@ void NodeAlvar::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg)
 		// 6. Compute the covariance in platform xy space
 		Rrobot_to_camera = T_robot_to_sensor__[__msg.markers[0].header.frame_id].matrix().block<2,2>(0,0);
 		Cxy_robot = Rrobot_to_camera.inverse()*Cxy_camera*Rrobot_to_camera.inverse().transpose();
-		//std::cout << "T_robot_to_sensor__:" << std::endl << T_robot_to_sensor__[__msg.markers[0].header.frame_id].matrix() << std::endl;
-		//std::cout << "Rrobot_to_camera: " << std::endl << Rrobot_to_camera << std::endl << "--------------" << std::endl;
-		//std::cout << "Cxy_robot: " << std::endl << Cxy_robot << std::endl << "--------------" << std::endl;
 
 		// 7. Transform the detection expressed in sensor frame to be expressed in robot frame
+		// Looking at alvar marker, marker frame is: X to the right, Y up, Z towards the viewer
+		// target_detector convention is: X towards the viewer, Y to the right,, Z up
 		aux_qt.coeffs() <<	__msg.markers[ii].pose.pose.orientation.x,
 							__msg.markers[ii].pose.pose.orientation.y,
 							__msg.markers[ii].pose.pose.orientation.z,
