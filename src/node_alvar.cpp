@@ -110,7 +110,8 @@ void NodeAlvar::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg)
 		msg.detections[ii].pose.pose.position.x = T_robot_to_alvar.translation().x();
 		msg.detections[ii].pose.pose.position.y = T_robot_to_alvar.translation().y();
 		msg.detections[ii].pose.pose.position.z = T_robot_to_alvar.translation().z();
-		angle_z = std::atan2(T_robot_to_alvar.linear()(1,2),T_robot_to_alvar.linear()(0,2));
+		//angle_z = std::atan2(T_robot_to_alvar.linear()(1,2),T_robot_to_alvar.linear()(0,2));
+		angle_z = std::atan2(-T_robot_to_alvar.linear()(1,1),-T_robot_to_alvar.linear()(0,1));
 		msg.detections[ii].pose.pose.orientation.x = 0.0;
 		msg.detections[ii].pose.pose.orientation.y = 0.0;
 		msg.detections[ii].pose.pose.orientation.z = std::sin(angle_z/2.0);
