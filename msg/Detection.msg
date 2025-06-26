@@ -1,3 +1,4 @@
+# detection type
 uint8 TYPE_UNKNOWN = 0
 uint8 TYPE_REFLECTOR_FROM_INTENSITY = 1
 uint8 TYPE_REFLECTOR_FROM_BOOL = 2
@@ -7,8 +8,6 @@ uint8 TYPE_STRAIGHT_SEGMENT = 5
 uint8 TYPE_CORNER = 6
 uint8 TYPE_PALLET = 7
 uint8 TYPE_ALVAR = 8
-
-# detection type
 uint8 type
 
 # some detections have an associated id (AR markers, object class ,... )
