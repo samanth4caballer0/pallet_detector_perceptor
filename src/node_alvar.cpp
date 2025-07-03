@@ -35,6 +35,8 @@ bool NodeAlvar::init()
 
 void NodeAlvar::alvarCallback(const ar_track_alvar_msgs::AlvarMarkers & __msg)
 {
+	if ( !enable__ ) return;
+
 	// check if any alvar detection
 	if ( __msg.markers.empty() )
 		return;

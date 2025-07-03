@@ -63,10 +63,6 @@ bool NodeLidar2d::init()
 			}
 			detector__ = std::make_shared<DetectorReflector>();
 			break;
-		case target_detector::Detection::TYPE_REFLECTOR_PAIR:
-			ROS_ERROR("Detector type not yet implemented. Exit.");
-			return false;
-			break;
 		case target_detector::Detection::TYPE_COLUMN:
 			ROS_INFO("Creating a DetectorColumn.");
 			for ( auto & lidar : lidars )
@@ -108,6 +104,8 @@ bool NodeLidar2d::init()
 
 void NodeLidar2d::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
 {
+	if ( !enable__ ) return;
+
 	// check if platform->lidar transform exists, and save it if not
 	if ( !saveSensorTransform(__scan_ptr->header) )
 	{
@@ -130,6 +128,7 @@ void NodeLidar2d::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __sca
 
 void NodeLidar2d::extendedLaserScanCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __extended_scan_ptr)
 {
+	if ( !enable__ ) return;
 /*	std::vector<bool> reflector_hits;
 	for ( auto & reflector_status : __extended_scan_ptr->reflektor_status )
 		reflector_hits.push_back( reflector_status ? true : false);

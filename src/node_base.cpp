@@ -26,6 +26,11 @@ bool NodeBase::init()
 	{
 		detector_type__ = (uint8_t)int_param;
 	}
+	if ( !nh__.getParam("enable_at_init", enable__) )
+	{
+		ROS_ERROR("Failed to get enable_at_init parameter");
+		return false;
+	}
 	if ( !nh__.getParam("robot_frame", robot_frame__) )
 	{
 		ROS_ERROR("Failed to get robot_frame parameter");

@@ -32,6 +32,7 @@ class NodeBase
 		ros::Publisher viz_marker_publisher__;
 
 		// config node parameters
+		bool enable__;
 		uint8_t detector_type__;
 		std::string robot_frame__;
 		bool vizbose__; // if true, publishes visualization markers

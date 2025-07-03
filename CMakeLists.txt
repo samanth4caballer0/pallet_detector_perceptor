@@ -34,7 +34,7 @@ add_message_files(
 )
 add_service_files(
 	DIRECTORY srv
-	FILES Detector.srv
+	FILES DetectorEnable.srv
 )
 generate_messages(
 	DEPENDENCIES
@@ -75,6 +75,19 @@ add_dependencies(${PROJECT_NAME}_lidar_2d
 	${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(${PROJECT_NAME}_lidar_2d
+	${catkin_LIBRARIES}
+)
+
+add_executable(${PROJECT_NAME}_baseline_pair
+	src/node_base.cpp
+	src/node_baseline_pair.cpp
+	src/main_baseline_pair.cpp
+)
+add_dependencies(${PROJECT_NAME}_baseline_pair
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(${PROJECT_NAME}_baseline_pair
 	${catkin_LIBRARIES}
 )
 

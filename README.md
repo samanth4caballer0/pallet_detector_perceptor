@@ -2,9 +2,11 @@
 
 ROS "front-end" for object/marker detectors such as:
 
-- Lidar reflector
-- Column
-- ALVAR single tag or bundle of tags (it is just a frame transform from ar_track_alvar output)
+- Reflectors from lidar intensity
+- Reflectors from bool
+- Reflector pairs at baseline from single reflectors
+- Columns from lidar scan
+- ALVAR markers, single tag or bundle of tags (it is just a frame transform from ar_track_alvar output)
 - Lidar geometric pattern, such as a v-marker (not implemented)
 - Point cloud geometric pattern, such as a pallet (not implemented)
 
@@ -16,14 +18,22 @@ The published detections are referenced to the platform frame. The X axis of the
 
 ### Parameters
 
-~vizbose: if true, publishes visualization markers
-
 ~detector_type (uint8, no default):
-  - 1 for DETECTOR_MARKER_REFLECTOR
-  - 2 for DETECTOR_QR
-  - 3 for DETECTOR_STD_PALLET (not implemented yet)
+  - TYPE_UNKNOWN = 0
+  - TYPE_REFLECTOR_FROM_INTENSITY = 1
+  - TYPE_REFLECTOR_FROM_BOOL = 2
+  - TYPE_BASELINE_PAIR = 3
+  - TYPE_COLUMN = 4
+  - TYPE_STRAIGHT_SEGMENT = 5
+  - TYPE_CORNER = 6
+  - TYPE_PALLET = 7
+  - TYPE_ALVAR = 8
+
+~enable_at_init (bool, no default): whether the detector is enabled at init or not.
 
 ~robot_frame (string, no default): frame id for the platform. Output detections are referenced to this frame.
+
+~vizbose (bool, no default): if true, publishes visualization markers
 
 ~lidar_frames (vector of strings, no default): names of frames of sensors
 
