@@ -22,9 +22,9 @@ bool NodeBaselinePair::init()
 	}
 
 	// config params
-	if ( !nh__.getParam("reflector_baseline_tolerance", detector_params__["reflector_baseline_tolerance"]) )
+	if ( !nh__.getParam("baseline_tolerance", detector_params__["baseline_tolerance"]) )
 	{
-		ROS_ERROR("Failed to get reflector_baseline_tolerance parameter.");
+		ROS_ERROR("Failed to get baseline_tolerance parameter.");
 		return false;
 	}
 
@@ -64,8 +64,8 @@ void NodeBaselinePair::detectionsCallback(const target_detector::Detections & __
 	Eigen::Vector3d z_axis(0.0, 0.0, 1.0);
 	Eigen::Vector3d platform_to_marker;
 	target_detector::Detection detection;
-	double reflector_baseline = detector_params__["reflector_baseline"];
-	double reflector_baseline_tolerance = detector_params__["reflector_baseline_tolerance"];
+	double baseline = detector_params__["baseline"];
+	double baseline_tolerance = detector_params__["baseline_tolerance"];
 	for ( int ii = 0; ii < __msg.detections.size(); ii++)
 	{
 		for ( int jj = ii+1; jj < __msg.detections.size(); jj++)
@@ -73,7 +73,7 @@ void NodeBaselinePair::detectionsCallback(const target_detector::Detections & __
 			reflector_one << __msg.detections[ii].pose.pose.position.x, __msg.detections[ii].pose.pose.position.y, 1.0;
 			reflector_two << __msg.detections[jj].pose.pose.position.x, __msg.detections[jj].pose.pose.position.y, 1.0;
 			actual_baseline = (reflector_one - reflector_two).norm();
-			if ( std::abs( actual_baseline - reflector_baseline ) < reflector_baseline_tolerance )
+			if ( std::abs( actual_baseline - baseline ) < baseline_tolerance )
 			{
 				// we have a good detection pair, so compute marker frame
 				y_axis = reflector_two - reflector_one;
