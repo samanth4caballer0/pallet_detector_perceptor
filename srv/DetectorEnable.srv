@@ -1,8 +1,8 @@
 # enable or disable the detector
 bool enable
 
-# for TYPE_REFLECTOR_PAIR, distance between a pair of reflectors that form the marker
-float64 reflector_baseline
+# for TYPE_BASELINE_PAIR, distance between a pair of detections (typically reflectors) that form the pattern
+float64 baseline
 
 # for TYPE_ALVAR, id of the tag, or id of the master tag in bundles
 uint32 alvar_marker_id
