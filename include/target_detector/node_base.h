@@ -18,6 +18,7 @@
 
 // this package
 #include "target_detector/Detections.h"
+#include "target_detector/DetectorEnable.h"
 
 namespace TargetDetector
 {
@@ -30,6 +31,7 @@ class NodeBase
 		ros::NodeHandle nh__;
 		ros::Publisher detector_publisher__;
 		ros::Publisher viz_marker_publisher__;
+		ros::ServiceServer detector_enable_server__;
 
 		// config node parameters
 		bool enable__;
@@ -53,6 +55,7 @@ class NodeBase
 	protected:
 
 		bool saveSensorTransform(const std_msgs::Header & __header);
+		bool detectorEnableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response);
 };
 
 }

@@ -45,6 +45,9 @@ bool NodeBase::init()
 	// publishers
 	detector_publisher__ = nh__.advertise<target_detector::Detections>( "detections", 1, true );
 
+	// services
+	detector_enable_server__ = nh__.advertiseService("detector_enable", &NodeBase::detectorEnableCallback, this);
+
 	// tf 2
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
@@ -96,6 +99,27 @@ bool NodeBase::saveSensorTransform(const std_msgs::Header & __header)
 	}
 
 	return true;
+}
+
+bool NodeBase::detectorEnableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
+{
+
+	enable__ = __request.enable;
+	switch (detector_type__)
+	{
+		case target_detector::Detection::TYPE_BASELINE_PAIR:
+			detector_params__["baseline"] = __request.baseline;
+			break;
+		case target_detector::Detection::TYPE_ALVAR:
+			detector_params__["alvar_marker_id"] = (double)(__request.alvar_marker_id);
+			break;
+		default:
+			break;
+	}
+
+	__response.success = true;
+	return true;
+
 }
 
 } // end of namespace
