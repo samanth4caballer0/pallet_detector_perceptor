@@ -1,5 +1,5 @@
-#ifndef TARGET_DETECTOR__CLUSTER_H
-#define TARGET_DETECTOR__CLUSTER_H
+#ifndef DETECTORS__CLUSTER_H
+#define DETECTORS__CLUSTER_H
 
 #include <iostream>
 #include <vector>
@@ -8,7 +8,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 
-namespace TargetDetector
+namespace Detectors
 {
 
 class Cluster

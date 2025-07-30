@@ -20,7 +20,7 @@ bool ReflectorPerceptor::init()
 	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &ReflectorPerceptor::enableCallback, this);
 
-	detector__ = std::make_unique<ReflectorDetector>();
+	detector__ = std::make_unique<Detectors::ReflectorDetector>();
 	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__);
 
 	return true;
@@ -38,7 +38,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		return;
 	}
 
-	std::vector<ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->angle_min, __scan_ptr->angle_max,
+	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->angle_min, __scan_ptr->angle_max,
 		__scan_ptr->ranges, __scan_ptr->intensities, T_robot_to_sensor_2d__[__scan_ptr->header.frame_id]);
 
 	target_detector::Detections detections;

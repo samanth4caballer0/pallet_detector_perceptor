@@ -1,0 +1,17 @@
+small_reflectors: # same as node namespace at launch
+    enabled_by_default: false
+    robot_frame: "platform"
+    lidars: ["lidar_front", "lidar_back"]
+    min_reflector_intensity: 250
+    reflector_size: 0.04 # radius of a cylinder or width of a strip, [m]
+    max_detection_range: 20
+
+big_reflectors:
+    enabled_by_default: true
+    robot_frame: "platform"
+    lidars: ["lidar_front", "lidar_back"]
+    min_reflector_intensity: 250
+    reflector_size: 0.06
+    max_detection_range: 50
+
+reflector_pairs

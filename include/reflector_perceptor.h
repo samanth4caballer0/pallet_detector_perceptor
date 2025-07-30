@@ -29,14 +29,14 @@ class ReflectorPerceptor
 
 		std::vector<ros::Subscriber> lidar_subscribers__;
 
-		bool enabled__;
+		bool enabled__ = false;
 		double reflector_size__;
 		double min_reflector_intensity__;
 		double max_detection_range__;
 		std::string robot_frame__;
 		std::vector<std::string> lidars__;
 
-		std::unique_ptr<ReflectorDetector> detector__;
+		std::unique_ptr<Detectors::ReflectorDetector> detector__;
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;

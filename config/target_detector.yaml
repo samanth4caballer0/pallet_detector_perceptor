@@ -1,7 +1,0 @@
-vizbose: true
-lidars: ["lidar"]
-scan_type: "sensor_msgs/LaserScan"
-robot_frame: "platform"
-min_reflector_intensity: 600
-reflector_width: 0.02 # radius of a cylinder or width of a strip
-max_reflector_range: 25

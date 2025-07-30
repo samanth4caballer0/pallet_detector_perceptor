@@ -6,7 +6,7 @@
 
 #include "detectors/cluster.h"
 
-namespace TargetDetector
+namespace Detectors
 {
 
 struct ReflectorDetection

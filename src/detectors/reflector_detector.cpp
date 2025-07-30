@@ -1,6 +1,6 @@
 #include "detectors/reflector_detector.h"
 
-namespace TargetDetector
+namespace Detectors
 {
 
 bool ReflectorDetector::configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range)

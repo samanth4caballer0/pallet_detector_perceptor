@@ -1,6 +1,6 @@
 #include <detectors/cluster.h>
 
-namespace TargetDetector
+namespace Detectors
 {
 
 Cluster::Cluster(const Eigen::Vector2d & __point, const double & __intensity)

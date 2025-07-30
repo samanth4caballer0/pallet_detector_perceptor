@@ -72,8 +72,20 @@ target_link_libraries(reflector_perceptor
 	${catkin_LIBRARIES}
 )
 
+add_executable(baseline_pair_perceptor
+	src/baseline_pair_perceptor_main.cpp
+	src/baseline_pair_perceptor.cpp
+)
+add_dependencies(baseline_pair_perceptor
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(baseline_pair_perceptor
+	${catkin_LIBRARIES}
+)
 
-install(TARGETS reflector_perceptor
+
+install(TARGETS reflector_perceptor baseline_pair_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
