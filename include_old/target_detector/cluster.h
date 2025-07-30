@@ -26,14 +26,8 @@ class Cluster
 
 	public:
 
-		// default constructor
-		Cluster();
-
 		// constructor with a first point
 		Cluster(const Eigen::Vector2d & __point, const double & __intensity);
-
-		// destructor
-		~Cluster();
 
 		// returns a reference to the vector of points supporting this cluster
 		const std::vector<Eigen::Vector2d> & points() const;
