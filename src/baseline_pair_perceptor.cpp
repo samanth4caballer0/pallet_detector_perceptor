@@ -12,6 +12,14 @@ bool BaselinePairPerceptor::init()
 		return false;
 	}
 
+	initDetection();
+
+	if ( vizbose__ )
+	{
+		initMarker();
+		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
+	}
+
 	detections_out_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &BaselinePairPerceptor::enableCallback, this);
 
@@ -35,13 +43,6 @@ void BaselinePairPerceptor::detectionsInCallback(const target_detector::Detectio
 	Eigen::Vector3d y_axis;
 	Eigen::Vector3d z_axis(0.0, 0.0, 1.0);
 	Eigen::Vector3d platform_to_marker;
-	target_detector::Detection detection;
-	detection.type = target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY;
-	detection.id = -1;
-	detection.pose.pose.position.z = 0.0;
-	detection.pose.pose.orientation.x = 0.0;
-	detection.pose.pose.orientation.y = 0.0;
-	detection.supports = 2;
 
 	for ( int ii = 0; ii < __detections_in.detections.size(); ii++)
 	{
@@ -64,21 +65,24 @@ void BaselinePairPerceptor::detectionsInCallback(const target_detector::Detectio
 				}
 				angle = std::atan2(x_axis.y(), x_axis.x());
 
-				detection.pose.pose.position.x = platform_to_marker.x();
-				detection.pose.pose.position.y = platform_to_marker.y();
-				detection.pose.pose.orientation.z = std::sin(angle/2.0);
-				detection.pose.pose.orientation.w = std::cos(angle/2.0);
-				detection.points.clear();
-				detection.points.push_back(__detections_in.detections[ii].pose.pose.position);
-				detection.points.push_back(__detections_in.detections[jj].pose.pose.position);
-				detection.baseline = actual_baseline;
+				detection__.pose.pose.position.x = platform_to_marker.x();
+				detection__.pose.pose.position.y = platform_to_marker.y();
+				detection__.pose.pose.orientation.z = std::sin(angle/2.0);
+				detection__.pose.pose.orientation.w = std::cos(angle/2.0);
+				detection__.points.clear();
+				detection__.points.push_back(__detections_in.detections[ii].pose.pose.position);
+				detection__.points.push_back(__detections_in.detections[jj].pose.pose.position);
+				detection__.baseline = actual_baseline;
 
-				detections_out.detections.push_back(detection);
+				detections_out.detections.push_back(detection__);
 			}
 		}
 	}
 
 	detections_out_publisher__.publish(detections_out);
+
+	if ( vizbose__ )
+		publishMarkers(detections_out);
 }
 
 bool BaselinePairPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -107,6 +111,7 @@ bool BaselinePairPerceptor::enableCallback(target_detector::DetectorEnable::Requ
 
 bool BaselinePairPerceptor::configureParameters()
 {
+	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 	return	getParamOrFail("baseline_tolerance", baseline_tolerance__);
 }
 
@@ -118,6 +123,17 @@ void BaselinePairPerceptor::subscribeToData()
 void BaselinePairPerceptor::unsubscribeFromData()
 {
 	detections_in_subscriber__.shutdown();
+}
+
+void BaselinePairPerceptor::publishMarkers(const target_detector::Detections & __detections)
+{
+	marker__.header = __detections.header;
+
+	marker__.points.clear();
+	for ( auto & detection : __detections.detections )
+		marker__.points.insert(marker__.points.end(), detection.points.begin(), detection.points.end());
+
+	markers_publisher__.publish(marker__);
 }
 
 }

@@ -11,6 +11,7 @@ find_package( catkin REQUIRED COMPONENTS
 	sensor_msgs
 	tf2
 	tf2_ros
+	visualization_msgs
 )
 
 add_message_files(
@@ -39,6 +40,7 @@ catkin_package(
 		sensor_msgs
 		tf2
 		tf2_ros
+		visualization_msgs
 )
 
 include_directories(

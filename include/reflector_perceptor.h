@@ -9,6 +9,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/LaserScan.h>
+#include <visualization_msgs/Marker.h>
 
 #include <target_detector/DetectorEnable.h>
 #include <target_detector/Detections.h>
@@ -23,13 +24,19 @@ class ReflectorPerceptor
 	protected:
 
 		ros::NodeHandle nh__;
+		std::string perceptor_name__;
 
 		ros::Publisher detections_publisher__;
-		ros::ServiceServer enable_server__;
+		target_detector::Detection detection__;
 
+		ros::ServiceServer enable_server__;
+		bool enabled__ = false;
 		std::vector<ros::Subscriber> lidar_subscribers__;
 
-		bool enabled__ = false;
+		ros::Publisher markers_publisher__;
+		bool vizbose__ = false;
+		visualization_msgs::Marker marker__;
+
 		double reflector_size__;
 		double min_reflector_intensity__;
 		double max_detection_range__;
@@ -58,6 +65,8 @@ class ReflectorPerceptor
 
 		bool saveSensorTransform(const std_msgs::Header & __header);
 
+		void publishMarkers(const target_detector::Detections & __detections);
+
 		template <typename T>
 		bool getParamOrFail(const std::string & __name, T& __variable)
 		{
@@ -69,6 +78,36 @@ class ReflectorPerceptor
 			return true;
 		};
 
+		void initDetection()
+		{
+			detection__.type = target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY;
+			detection__.id = -1;
+			detection__.pose.pose.position.z = 0.0;
+			detection__.pose.pose.orientation.x = 0.0;
+			detection__.pose.pose.orientation.y = 0.0;
+			detection__.pose.pose.orientation.z = 0.0;
+			detection__.pose.pose.orientation.w = 1.0;
+		};
+
+		void initMarker()
+		{
+			marker__.id = 0;
+			marker__.action = visualization_msgs::Marker::ADD;
+			marker__.lifetime = ros::Duration(0.5);
+			marker__.pose.orientation.x = 0.0;
+			marker__.pose.orientation.y = 0.0;
+			marker__.pose.orientation.z = 0.0;
+			marker__.pose.orientation.w = 1.0;
+			marker__.scale.x = 0.3;
+			marker__.scale.y = 0.3;
+			marker__.scale.z = 0.3;
+			marker__.ns = perceptor_name__;
+			marker__.type = visualization_msgs::Marker::SPHERE_LIST;
+			marker__.color.r = 1.0;
+			marker__.color.g = 1.0;
+			marker__.color.b = 0.0;
+			marker__.color.a = 0.75;
+		};
 };
 	
 }

@@ -5,15 +5,22 @@ namespace TargetDetector
 
 bool ReflectorPerceptor::init()
 {
-
 	if ( !configureParameters() )
 	{
 		ROS_ERROR("Failed to configure reflector detection");
 		return false;
 	}
 
+	initDetection();
+
 	if ( enabled__ )
 		subscribeToLidars();
+
+	if ( vizbose__ )
+	{
+		initMarker();
+		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
+	}
 
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
@@ -44,26 +51,21 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	target_detector::Detections detections;
 	detections.header = __scan_ptr->header;
 	detections.header.frame_id = robot_frame__;
-	target_detector::Detection detection;
-	detection.type = target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY;
-	detection.id = -1;
-	detection.pose.pose.position.z = 0.0;
-	detection.pose.pose.orientation.x = 0.0;
-	detection.pose.pose.orientation.y = 0.0;
-	detection.pose.pose.orientation.z = 0.0;
-	detection.pose.pose.orientation.w = 1.0;
 	for ( auto & detected_reflector : detected_reflectors )
 	{
-		detection.pose.pose.position.x = detected_reflector.centroid_x;
-		detection.pose.pose.position.y = detected_reflector.centroid_y;
-		detection.pose.covariance[0] = detected_reflector.covariance_xx;
-		detection.pose.covariance[7] = detected_reflector.covariance_yy;
-		detection.intensity = detected_reflector.intensity;
-		detection.supports = detected_reflector.supports;
-		detections.detections.push_back(detection);
+		detection__.pose.pose.position.x = detected_reflector.centroid_x;
+		detection__.pose.pose.position.y = detected_reflector.centroid_y;
+		detection__.pose.covariance[0] = detected_reflector.covariance_xx;
+		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
+		detection__.intensity = detected_reflector.intensity;
+		detection__.supports = detected_reflector.supports;
+		detections.detections.push_back(detection__);
 	}
 
 	detections_publisher__.publish(detections);
+
+	if ( vizbose__ )
+		publishMarkers(detections);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -81,7 +83,9 @@ bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request
 
 bool ReflectorPerceptor::configureParameters()
 {
+	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 	return	getParamOrFail("enabled_by_default", enabled__) &&
+			getParamOrFail("vizbose", vizbose__) &&
 			getParamOrFail("lidars", lidars__) &&
 			getParamOrFail("reflector_size", reflector_size__) &&
 			getParamOrFail("min_reflector_intensity", min_reflector_intensity__) &&
@@ -144,6 +148,17 @@ bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 	}
 
 	return true;
+}
+
+void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections)
+{
+	marker__.header = __detections.header;
+
+	marker__.points.clear();
+	for ( auto & detection : __detections.detections )
+		marker__.points.push_back(detection.pose.pose.position);
+
+	markers_publisher__.publish(marker__);
 }
 
 }
