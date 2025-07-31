@@ -112,7 +112,8 @@ bool BaselinePairPerceptor::enableCallback(target_detector::DetectorEnable::Requ
 bool BaselinePairPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
-	return	getParamOrFail("baseline_tolerance", baseline_tolerance__);
+	return	getParamOrFail("baseline_tolerance", baseline_tolerance__) &&
+			getParamOrFail("vizbose", vizbose__);
 }
 
 void BaselinePairPerceptor::subscribeToData()
@@ -127,6 +128,10 @@ void BaselinePairPerceptor::unsubscribeFromData()
 
 void BaselinePairPerceptor::publishMarkers(const target_detector::Detections & __detections)
 {
+	// only publish if not emtpy, otherwise rviz generates error
+	if ( __detections.detections.empty() )
+		return;
+
 	marker__.header = __detections.header;
 
 	marker__.points.clear();

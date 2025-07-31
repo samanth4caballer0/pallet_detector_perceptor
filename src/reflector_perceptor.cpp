@@ -152,6 +152,10 @@ bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 
 void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections)
 {
+	// only publish if not emtpy, otherwise rviz generates error
+	if ( __detections.detections.empty() )
+		return;
+
 	marker__.header = __detections.header;
 
 	marker__.points.clear();

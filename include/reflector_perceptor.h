@@ -98,9 +98,9 @@ class ReflectorPerceptor
 			marker__.pose.orientation.y = 0.0;
 			marker__.pose.orientation.z = 0.0;
 			marker__.pose.orientation.w = 1.0;
-			marker__.scale.x = 0.3;
-			marker__.scale.y = 0.3;
-			marker__.scale.z = 0.3;
+			marker__.scale.x = reflector_size__*7.5; // just increasing size to be visible. Typical sizes are 0.04, so we plot at 0.3
+			marker__.scale.y = reflector_size__*7.5;
+			marker__.scale.z = reflector_size__*7.5;
 			marker__.ns = perceptor_name__;
 			marker__.type = visualization_msgs::Marker::SPHERE_LIST;
 			marker__.color.r = 1.0;
