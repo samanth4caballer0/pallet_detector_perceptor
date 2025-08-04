@@ -12,6 +12,8 @@ find_package( catkin REQUIRED COMPONENTS
 	tf2
 	tf2_ros
 	visualization_msgs
+	std_msgs
+	ar_track_alvar_msgs
 )
 
 add_message_files(
@@ -41,6 +43,8 @@ catkin_package(
 		tf2
 		tf2_ros
 		visualization_msgs
+		std_msgs
+		ar_track_alvar_msgs
 )
 
 include_directories(
@@ -86,8 +90,24 @@ target_link_libraries(baseline_pair_perceptor
 	${catkin_LIBRARIES}
 )
 
+add_executable(alvar_perceptor
+	src/alvar_perceptor_main.cpp
+	src/alvar_perceptor.cpp
+)
+add_dependencies(alvar_perceptor
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(alvar_perceptor
+	${catkin_LIBRARIES}
+)
 
-install(TARGETS reflector_perceptor baseline_pair_perceptor
+
+install(
+	TARGETS
+		reflector_perceptor
+		baseline_pair_perceptor
+		alvar_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

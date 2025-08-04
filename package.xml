@@ -28,5 +28,7 @@
 	<depend>tf2</depend>
 	<depend>tf2_ros</depend>
 	<depend>visualization_msgs</depend>
+	<depend>std_msgs</depend>
+	<depend>ar_track_alvar_msgs</depend>
 
 </package>
