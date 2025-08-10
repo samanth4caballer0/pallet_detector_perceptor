@@ -29,7 +29,7 @@ bool AlvarPerceptor::init()
 	if ( vizbose__ )
 	{
 		initMarker();
-		markers_publisher__ = nh__.advertise<visualization_msgs::MarkerArray>("visuals", 1, false);
+		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
 	}
 
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
@@ -72,7 +72,17 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 	Eigen::Quaterniond auxiliar_quaternion;
 	Eigen::Isometry3d T_camera_to_alvar; // alvar wrt camera (camera to alvar), from alvar detector
 	Eigen::Isometry3d T_robot_to_alvar; // alvar wrt platform (platform to alvar), the one we want to compute
-	double angle_z; // angle of alvar wrt the platform z axis (on the XY platform plane)
+	Eigen::Isometry3d T_alvar_convention_to_beta_convention; // just a rotation of axis to match beta convention
+	Eigen::Quaterniond quaternion_robot_to_alvar;
+
+	// Looking at alvar marker, marker frame is: X to the right, Y up, Z towards the viewer
+	// beta convention is: X towards the viewer, Y to the right, Z up
+	T_alvar_convention_to_beta_convention = Eigen::Isometry3d::Identity();
+	T_alvar_convention_to_beta_convention.linear() <<
+		0, 1, 0,
+		0, 0, 1,
+		1, 0, 0;
+
 	for ( auto & bundle : __bundles.markers )
 	{
 		// 0. Check if corresponds to the desired id
@@ -105,9 +115,7 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 		Rotation_robot_to_camera = T_robot_to_sensor__[__bundles.markers.front().header.frame_id].matrix().block<2,2>(0,0);
 		Covariance_xy_robot = Rotation_robot_to_camera.inverse()*Covariance_xy_camera*Rotation_robot_to_camera.inverse().transpose();
 
-		// 7. Transform the detection expressed in sensor frame to be expressed in robot frame
-		// Looking at alvar marker, marker frame is: X to the right, Y up, Z towards the viewer
-		// target_detector convention is: X towards the viewer, Y to the right,, Z up
+		// 7. Transform the detection expressed in sensor frame to be expressed in robot frame in our convention
 		auxiliar_quaternion.coeffs() <<	bundle.pose.pose.orientation.x,
 							bundle.pose.pose.orientation.y,
 							bundle.pose.pose.orientation.z,
@@ -116,17 +124,18 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 		T_camera_to_alvar.translation() <<	bundle.pose.pose.position.x,
 											bundle.pose.pose.position.y,
 											bundle.pose.pose.position.z;
-		T_robot_to_alvar = T_robot_to_sensor__[__bundles.markers.front().header.frame_id]*T_camera_to_alvar;
-		//angle_z = std::atan2(T_robot_to_alvar.linear()(1,2),T_robot_to_alvar.linear()(0,2));
-		angle_z = std::atan2(-T_robot_to_alvar.linear()(1,1),-T_robot_to_alvar.linear()(0,1));
+		// Full transform: robot <- camera <- alvar <- convention swap
+		T_robot_to_alvar = T_robot_to_sensor__[__bundles.markers.front().header.frame_id] * T_camera_to_alvar * T_alvar_convention_to_beta_convention;
+		quaternion_robot_to_alvar = Eigen::Quaterniond(T_robot_to_alvar.linear());
 
-		// fill out message
 		detection__.id = bundle.id;
 		detection__.pose.pose.position.x = T_robot_to_alvar.translation().x();
 		detection__.pose.pose.position.y = T_robot_to_alvar.translation().y();
 		detection__.pose.pose.position.z = T_robot_to_alvar.translation().z();
-		detection__.pose.pose.orientation.z = std::sin(angle_z/2.0);
-		detection__.pose.pose.orientation.w = std::cos(angle_z/2.0);
+		detection__.pose.pose.orientation.x = quaternion_robot_to_alvar.x();
+		detection__.pose.pose.orientation.y = quaternion_robot_to_alvar.y();
+		detection__.pose.pose.orientation.z = quaternion_robot_to_alvar.z();
+		detection__.pose.pose.orientation.w = quaternion_robot_to_alvar.w();
 		detection__.pose.covariance[0] = Covariance_xy_robot(0,0); // Cxx
 		detection__.pose.covariance[1] = Covariance_xy_robot(0,1); // Cxy
 		detection__.pose.covariance[6] = Covariance_xy_robot(1,0); // Cyx
@@ -191,17 +200,69 @@ void AlvarPerceptor::publishMarkers(const target_detector::Detections & __detect
 
 	marker__.header = __detections.header;
 	marker__.points.clear();
+	marker__.colors.clear();
+	marker__.color.a = 0.0; // ignored if using per-point color
 
-	visualization_msgs::MarkerArray marker_array;
-
+	tf2::Transform transform;
+	std_msgs::ColorRGBA color;
+	color.a = 1.0;
 	for ( auto & detection : __detections.detections )
 	{
 		marker__.id = detection.id;
-		marker__.pose = detection.pose.pose;
-		marker_array.markers.push_back(marker__);
+	
+        geometry_msgs::Point origin, px, py, pz;
+        double length = 0.3; // axis length
+
+		tf2::fromMsg(detection.pose.pose, transform);
+		tf2::Vector3 origin_tf = transform.getOrigin();
+
+        // Create points for each axis
+        tf2::Vector3 x = transform * tf2::Vector3(length, 0, 0);
+        tf2::Vector3 y = transform * tf2::Vector3(0, length, 0);
+        tf2::Vector3 z = transform * tf2::Vector3(0, 0, length);
+
+        origin.x = origin_tf.x();
+		origin.y = origin_tf.y();
+		origin.z = origin_tf.z();
+        px.x = x.x();
+		px.y = x.y();
+		px.z = x.z();
+        py.x = y.x();
+		py.y = y.y();
+		py.z = y.z();
+        pz.x = z.x();
+		pz.y = z.y();
+		pz.z = z.z();
+
+        // X axis (red)
+        marker__.points.push_back(origin);
+        marker__.points.push_back(px);
+        color.r = 1.0;
+		color.g = 0.0;
+		color.b = 0.0;
+        marker__.colors.push_back(color);
+        marker__.colors.push_back(color);
+
+        // Y axis (green)
+        marker__.points.push_back(origin);
+        marker__.points.push_back(py);
+        color.r = 0.0;
+		color.g = 1.0;
+		color.b = 0.0;
+        marker__.colors.push_back(color);
+        marker__.colors.push_back(color);
+
+        // Z axis (blue)
+        marker__.points.push_back(origin);
+        marker__.points.push_back(pz);
+        color.r = 0.0;
+		color.g = 0.0;
+		color.b = 1.0;
+        marker__.colors.push_back(color);
+        marker__.colors.push_back(color);
 	}
 
-	markers_publisher__.publish(marker_array);
+	markers_publisher__.publish(marker__);
 }
 
 bool AlvarPerceptor::saveSensorTransform(const std_msgs::Header & __header)
@@ -215,7 +276,7 @@ bool AlvarPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 		try
 		{
 			// get _transform from tf
-			T_robot_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+			T_robot_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(0.0));
 
 			// convert to Eigen Isometry3d
 			aux_qt.coeffs() <<

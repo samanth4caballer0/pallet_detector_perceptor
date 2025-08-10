@@ -8,8 +8,9 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <std_msgs/Bool.h>
 
 #include <ar_track_alvar_msgs/AlvarMarkers.h>
@@ -98,11 +99,11 @@ class AlvarPerceptor
 			marker__.lifetime = ros::Duration(0.5);
 			marker__.pose.orientation.x = 0.0;
 			marker__.pose.orientation.y = 0.0;
-			marker__.scale.x = marker_size__;
-			marker__.scale.y = marker_size__;
-			marker__.scale.z = 0.005;
+			marker__.pose.orientation.z = 0.0;
+			marker__.pose.orientation.w = 1.0;
+			marker__.scale.x = 0.05;	// line width
 			marker__.ns = perceptor_name__;
-			marker__.type = visualization_msgs::Marker::CUBE;
+			marker__.type = visualization_msgs::Marker::LINE_LIST;
 			marker__.color.r = 1.0;
 			marker__.color.g = 0.4;
 			marker__.color.b = 0.0;
