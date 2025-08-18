@@ -1,0 +1,4 @@
+docking_pairs:
+  type: baseline_pair
+  vizbose: true
+  baseline_tolerance: 0.03

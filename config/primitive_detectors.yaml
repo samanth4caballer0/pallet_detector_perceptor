@@ -1,0 +1,30 @@
+small_reflectors: # same as node namespace
+  type: reflector # type here is only informative, but should be in consonance with node in launch, i.e.: reflector_perceptor type
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_front", "lidar_back"]
+  min_reflector_intensity: 250
+  reflector_size: 0.04
+  max_detection_range: 20
+
+big_reflectors:
+  type: reflector
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_front", "lidar_back"]
+  min_reflector_intensity: 250
+  reflector_size: 0.06
+  max_detection_range: 50
+
+alvars:
+  type: alvar
+  enabled_by_default: true # bundle processing by ar_track_alvar is enabled/disabled accordingly
+  vizbose: true
+  robot_frame: "platform"
+
+square_columns:
+  type: cluster
+  vizbose: true
+  column_side: 0.5
