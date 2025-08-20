@@ -12,15 +12,7 @@ bool ReflectorPerceptor::init()
 	}
 
 	initDetection();
-
-	if ( enabled__ )
-		subscribeToLidars();
-
-	if ( vizbose__ )
-	{
-		initMarker();
-		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
-	}
+	initAllDetections();
 
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
@@ -29,6 +21,20 @@ bool ReflectorPerceptor::init()
 
 	detector__ = std::make_unique<Detectors::ReflectorDetector>();
 	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__);
+
+	detections_timer__ =  nh__.createTimer(ros::Duration(1.0/rate__), &ReflectorPerceptor::detectionsTimerCallback, this, false, false);
+
+	if ( enabled__ )
+	{
+		subscribeToLidars();
+		detections_timer__.start();
+	}
+
+	if ( vizbose__ )
+	{
+		initMarker();
+		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
+	}
 
 	return true;
 };
@@ -62,19 +68,52 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		detections.detections.push_back(detection__);
 	}
 
-	detections_publisher__.publish(detections);
+	last_detections__[__scan_ptr->header.frame_id] = detections;
+}
+
+void ReflectorPerceptor::detectionsTimerCallback(const ros::TimerEvent & __timer_event)
+{
+	all_detections__.header.stamp = ros::Time::now();
+	all_detections__.detections.clear();
+	for ( auto & [lidar, detections] : last_detections__ )
+	{
+		if ( ros::Time::now() - detections.header.stamp > max_detection_age__ )
+		{
+			// forget detections that are too old now
+			detections.detections.clear();
+			continue;
+		}
+
+		all_detections__.detections.insert(
+			all_detections__.detections.end(),
+			detections.detections.begin(),
+			detections.detections.end()
+		);
+	}
+	detections_publisher__.publish(all_detections__);
 
 	if ( vizbose__ )
-		publishMarkers(detections);
+		publishMarkers(all_detections__);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
 {
 	if ( !enabled__ && __request.enable )
+	{
 		subscribeToLidars();
+		detections_timer__.start();
+	}
 
 	if ( enabled__ && !__request.enable )
+	{
 		unsubscribeFromLidars();
+		detections_timer__.stop();
+
+		// since we disable, make sure to publish an empty detections message to clear interested parties
+		all_detections__.header.stamp = ros::Time::now();
+		all_detections__.detections.clear();
+		detections_publisher__.publish(all_detections__);
+	}
 
 	enabled__ = __request.enable;
 	__response.success = true;
@@ -90,7 +129,8 @@ bool ReflectorPerceptor::configureParameters()
 			getParamOrFail("reflector_size", reflector_size__) &&
 			getParamOrFail("min_reflector_intensity", min_reflector_intensity__) &&
 			getParamOrFail("max_detection_range", max_detection_range__) &&
-			getParamOrFail("robot_frame", robot_frame__);
+			getParamOrFail("robot_frame", robot_frame__) &&
+			getParamOrFail("rate", rate__);
 }
 
 void ReflectorPerceptor::subscribeToLidars()

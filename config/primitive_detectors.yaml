@@ -7,6 +7,7 @@ small_reflectors: # same as node namespace
   min_reflector_intensity: 250
   reflector_size: 0.04
   max_detection_range: 20
+  rate: 5.0
 
 big_reflectors:
   type: reflector
@@ -17,14 +18,10 @@ big_reflectors:
   min_reflector_intensity: 250
   reflector_size: 0.06
   max_detection_range: 50
+  rate: 5.0
 
 alvars:
   type: alvar
   enabled_by_default: true # bundle processing by ar_track_alvar is enabled/disabled accordingly
   vizbose: true
   robot_frame: "platform"
-
-square_columns:
-  type: cluster
-  vizbose: true
-  column_side: 0.5

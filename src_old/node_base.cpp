@@ -107,10 +107,10 @@ bool NodeBase::detectorEnableCallback(target_detector::DetectorEnable::Request &
 	enable__ = __request.enable;
 	switch (detector_type__)
 	{
-		case target_detector::Detection::TYPE_BASELINE_PAIR:
+		case target_detector::Detection::BASELINE_PAIR:
 			detector_params__["baseline"] = __request.baseline;
 			break;
-		case target_detector::Detection::TYPE_ALVAR:
+		case target_detector::Detection::ALVAR:
 			detector_params__["alvar_marker_id"] = (double)(__request.alvar_marker_id);
 			break;
 		default:

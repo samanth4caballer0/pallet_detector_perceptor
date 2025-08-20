@@ -178,7 +178,6 @@ bool AlvarPerceptor::configureParameters()
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 	return	getParamOrFail("enabled_by_default", enabled__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
-			getParamOrFail("marker_size", marker_size__) &&
 			getParamOrFail("vizbose", vizbose__);
 }
 

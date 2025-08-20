@@ -42,8 +42,6 @@ class AlvarPerceptor
 		std::string robot_frame__;
 		int alvar_id__ = -1; // init to detect all
 
-		double marker_size__;
-
 		ros::Publisher enable_bundle_detection_publisher__;
 
 		tf2_ros::Buffer tf_buffer__;
@@ -88,7 +86,7 @@ class AlvarPerceptor
 
 		void initDetection()
 		{
-			detection__.type = target_detector::Detection::TYPE_ALVAR;
+			detection__.type = target_detector::Detection::ALVAR;
 			detection__.pose.pose.orientation.x = 0.0;
 			detection__.pose.pose.orientation.y = 0.0;
 		};

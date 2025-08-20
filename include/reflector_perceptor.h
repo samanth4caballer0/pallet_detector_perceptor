@@ -25,9 +25,13 @@ class ReflectorPerceptor
 
 		ros::NodeHandle nh__;
 		std::string perceptor_name__;
-
+		
+		std::map<std::string, target_detector::Detections> last_detections__;
+		ros::Timer detections_timer__;
+		target_detector::Detections all_detections__;
 		ros::Publisher detections_publisher__;
 		target_detector::Detection detection__;
+		ros::Duration max_detection_age__ = ros::Duration(0.5);
 
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
@@ -40,6 +44,7 @@ class ReflectorPerceptor
 		double reflector_size__;
 		double min_reflector_intensity__;
 		double max_detection_range__;
+		double rate__;
 		std::string robot_frame__;
 		std::vector<std::string> lidars__;
 
@@ -63,6 +68,8 @@ class ReflectorPerceptor
 		void subscribeToLidars();
 		void unsubscribeFromLidars();
 
+		void detectionsTimerCallback(const ros::TimerEvent & __timer_event);
+
 		bool saveSensorTransform(const std_msgs::Header & __header);
 
 		void publishMarkers(const target_detector::Detections & __detections);
@@ -78,9 +85,14 @@ class ReflectorPerceptor
 			return true;
 		};
 
+		void initAllDetections()
+		{
+			all_detections__.header.frame_id = robot_frame__;
+		};
+
 		void initDetection()
 		{
-			detection__.type = target_detector::Detection::TYPE_REFLECTOR_FROM_INTENSITY;
+			detection__.type = target_detector::Detection::REFLECTOR_FROM_INTENSITY;
 			detection__.id = -1;
 			detection__.pose.pose.position.z = 0.0;
 			detection__.pose.pose.orientation.x = 0.0;
@@ -93,7 +105,7 @@ class ReflectorPerceptor
 		{
 			marker__.id = 0;
 			marker__.action = visualization_msgs::Marker::ADD;
-			marker__.lifetime = ros::Duration(0.5);
+			marker__.lifetime = max_detection_age__;
 			marker__.pose.orientation.x = 0.0;
 			marker__.pose.orientation.y = 0.0;
 			marker__.pose.orientation.z = 0.0;
