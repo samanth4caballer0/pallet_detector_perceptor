@@ -62,7 +62,7 @@ class BaselinePairPerceptor
 
 		void initDetection()
 		{
-			detection__.type = target_detector::Detection::REFLECTOR_FROM_INTENSITY;
+			detection__.type = target_detector::Detection::BASELINE_PAIR;
 			detection__.id = -1;
 			detection__.pose.pose.position.z = 0.0;
 			detection__.pose.pose.orientation.x = 0.0;

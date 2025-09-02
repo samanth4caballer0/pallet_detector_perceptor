@@ -1,14 +1,73 @@
 # Overview
 
-ROS "front-end" for object/marker detectors such as:
+ROS "front-end" for object/marker detectors such as reflectors, alvars, columns and combinations of those.
+We can launch detections of two types:
 
-- Reflectors from lidar intensity
-- Reflectors from bool
-- Reflector pairs at baseline from single reflectors
-- Columns from lidar scan
-- ALVAR markers, single tag or bundle of tags (it is just a frame transform from ar_track_alvar output)
-- Lidar geometric pattern, such as a v-marker (not implemented)
-- Point cloud geometric pattern, such as a pallet (not implemented)
+- Primitive detections: those arising from a sensor source. Available now:
+    - Reflectors from lidar intensity
+	- Alvar bundles (we do not detect single alvars for now, so the simplest alvar detection is a bundle)
+
+- Composite detections: patterns of detections (patterns of primitive detections in general, but could be of composite detections as well). Available now:
+    - Baseline pair: finds detections that are separated a given baseline. Example: docking reflector pairs.
+
+Primitive detectors subscribe to some sensor source (i.e. lidar scan, camera stream, ar_track_alvar output).
+
+# Launch
+
+To launch detectors you need to:
+
+- Define them in a yaml file, giving a name to each detector
+- Add them to a launch file, using the detector name as the namespace
+
+Example:
+
+In the yaml file:
+
+```yaml
+small_reflectors: # same as node namespace
+  type: reflector # type here is only informative, but should be in consonance with node in launch, i.e.: reflector_perceptor type
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_front", "lidar_back"]
+  min_reflector_intensity: 250
+  reflector_size: 0.04
+  max_detection_range: 20
+  rate: 5.0
+```
+
+In the launch file:
+
+```xml
+<group ns="small_reflectors">
+	<node
+		pkg="target_detector"
+		type="reflector_perceptor"
+		name="perceptor"
+		output="screen" >
+		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		<remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
+		<remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
+	</node>
+</group>
+```
+
+For yaml files, the available types now are:
+
+- Primitive:
+    - reflector 
+    - alvar
+- Composite:
+    - baseline_pair
+
+So in the launch files, you can use the following corresponding node types:
+
+- reflector_perceptor
+- alvar_perceptor
+- baseline_pair_perceptor
+
+The nodes are called perceptors because the detectors word is reserved for the c++ classes that actually contain the code that detects stuff.
+
 
 # Frames
 
@@ -16,37 +75,66 @@ The published detections are referenced to the platform frame. The X axis of the
 
 # ROS API
 
-### Parameters
+## Parameters
 
-~detector_type (uint8, no default):
-  - TYPE_UNKNOWN = 0
-  - TYPE_REFLECTOR_FROM_INTENSITY = 1
-  - TYPE_REFLECTOR_FROM_BOOL = 2
-  - TYPE_BASELINE_PAIR = 3
-  - TYPE_COLUMN = 4
-  - TYPE_STRAIGHT_SEGMENT = 5
-  - TYPE_CORNER = 6
-  - TYPE_PALLET = 7
-  - TYPE_ALVAR = 8
+Type reflector:
+- enabled_by_default (bool)
+- vizbose (bool)
+- robot_frame (string) -> output detections are referenced to this frame
+- lidars (string array for lidar topics)
+- min_reflector_intensity (double)
+- reflector_size (double)
+- max_detection_range (double) -> cut-off distance
+- rate (double) -> detections publish rate
 
-~enable_at_init (bool, no default): whether the detector is enabled at init or not.
+Type alvar:
+- enabled_by_default (bool)
+- vizbose (bool)
+- robot_frame (string)
 
-~robot_frame (string, no default): frame id for the platform. Output detections are referenced to this frame.
+Type baseline_pair:
+- vizbose (bool)
+- baseline_tolerance (double)
 
-~vizbose (bool, no default): if true, publishes visualization markers
+Composite detectors can not be enabled by default, since they depend on the enabled state of another detector.
 
-~lidar_frames (vector of strings, no default): names of frames of sensors
+## API
 
-~min_reflector_intensity (double, [-], default 254): intensity threshold to consider a lidar hit to a reflector surface. May change a lot according the lidar device manufacturer.
+Each perceptor generates:
 
-~target_size (double, m, no default): One applies, depending on detector_type:
- - radius of a cylindric reflector
- - width of a planar reflector.
- - Side of a squared column
+- a detections topic where detections are published
+- a visuals topic where markers are publish if vizbose
+- a enable server, to enable/disable the processing. Note that alvars and baseline_pair need some parameter when enabling.
 
-~max_target_range (double, [m], no default): range max to look for detections
+## Tracking
 
+If needed, a tracker can be launched alongside a perceptor, and that tracker will only track detections from the companion perceptor. Example:
 
-### ROS interfaces
+```xml
+<group ns="docking_pairs">
 
-# RUN
+	<node
+		pkg="target_detector"
+		type="baseline_pair_perceptor"
+		name="perceptor"
+		output="screen" >
+		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		<remap from="detections_in" to="/$(arg robot_id)/perception/small_reflectors/detections"/>
+	</node>
+
+	<node
+		pkg="target_tracker"
+		type="target_tracker"
+		name="tracker"
+		output="screen" >
+		<remap from="odom" to="/$(arg robot_id)/odom"/>
+		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+	</node>
+
+</group>
+```
+
+## Reference
+
+See duna config and launch for more info on remapping, namespacing, and tracking of those detections. In particular, see how Detect and Track actions in BT trees now have parameters for detector name and type.
