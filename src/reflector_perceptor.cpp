@@ -17,7 +17,7 @@ bool ReflectorPerceptor::init()
 		sensor_ids__[lidars__.at(i)] = i;
 
 	initDetection();
-	initAllDetections();
+	initDetections();
 
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
@@ -28,10 +28,7 @@ bool ReflectorPerceptor::init()
 	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__);
 
 	if ( enabled__ )
-	{
 		subscribeToLidars();
-		detections_timer__.start();
-	}
 
 	if ( vizbose__ )
 	{
@@ -64,9 +61,8 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->angle_min, __scan_ptr->angle_max,
 		__scan_ptr->ranges, __scan_ptr->intensities, T_robot_to_sensor_2d__[__scan_ptr->header.frame_id]);
 
-	target_detector::Detections detections;
-	detections.header = __scan_ptr->header;
-	detections.header.frame_id = robot_frame__;
+	detections__.header = __scan_ptr->header;
+	detections__.detections.clear();
 	for ( auto & detected_reflector : detected_reflectors )
 	{
 		detection__.pose.pose.position.x = detected_reflector.centroid_x;
@@ -75,32 +71,28 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
 		detection__.intensity = detected_reflector.intensity;
 		detection__.supports = detected_reflector.supports;
-		detections.detections.push_back(detection__);
+		detections__.detections.push_back(detection__);
 	}
 
 	// publish current detections
-	detections_publisher__.publish(detections);
+	detections_publisher__.publish(detections__);
 	if ( vizbose__ )
-		publishMarkers(detections, __scan_ptr->header.frame_id);
+		publishMarkers(detections__, __scan_ptr->header.frame_id);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
 {
 	if ( !enabled__ && __request.enable )
-	{
 		subscribeToLidars();
-		detections_timer__.start();
-	}
 
 	if ( enabled__ && !__request.enable )
 	{
 		unsubscribeFromLidars();
-		detections_timer__.stop();
 
 		// since we disable, make sure to publish an empty detections message to clear interested parties
-		all_detections__.header.stamp = ros::Time::now();
-		all_detections__.detections.clear();
-		detections_publisher__.publish(all_detections__);
+		detections__.header.stamp = ros::Time::now();
+		detections__.detections.clear();
+		detections_publisher__.publish(detections__);
 	}
 
 	enabled__ = __request.enable;

@@ -27,10 +27,9 @@ class ReflectorPerceptor
 		std::string perceptor_name__;
 		
 		std::map<std::string, target_detector::Detections> last_detections__;
-		ros::Timer detections_timer__;
-		target_detector::Detections all_detections__;
 		ros::Publisher detections_publisher__;
 		target_detector::Detection detection__;
+		target_detector::Detections detections__;
 		ros::Duration max_detection_age__ = ros::Duration(0.5);
 
 		ros::ServiceServer enable_server__;
@@ -86,11 +85,6 @@ class ReflectorPerceptor
 			return true;
 		};
 
-		void initAllDetections()
-		{
-			all_detections__.header.frame_id = robot_frame__;
-		};
-
 		void initDetection()
 		{
 			detection__.type = target_detector::Detection::REFLECTOR_FROM_INTENSITY;
@@ -100,6 +94,11 @@ class ReflectorPerceptor
 			detection__.pose.pose.orientation.y = 0.0;
 			detection__.pose.pose.orientation.z = 0.0;
 			detection__.pose.pose.orientation.w = 1.0;
+		};
+
+		void initDetections()
+		{
+			detections__.header.frame_id = robot_frame__;
 		};
 
 		void initMarker()
