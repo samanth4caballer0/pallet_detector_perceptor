@@ -11,6 +11,11 @@ bool ReflectorPerceptor::init()
 		return false;
 	}
 
+	// update stuff that depends on given parameters
+	processing_period__ = ros::Duration(1.0/rate__);
+	for ( int i = 0; i < lidars__.size(); i++) // this is just to give a unique id to each sensor, being the id an int (for markers publishing)
+		sensor_ids__[lidars__.at(i)] = i;
+
 	initDetection();
 	initAllDetections();
 
@@ -21,8 +26,6 @@ bool ReflectorPerceptor::init()
 
 	detector__ = std::make_unique<Detectors::ReflectorDetector>();
 	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__);
-
-	detections_timer__ =  nh__.createTimer(ros::Duration(1.0/rate__), &ReflectorPerceptor::detectionsTimerCallback, this, false, false);
 
 	if ( enabled__ )
 	{
@@ -44,6 +47,12 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	if ( !enabled__ )
 		return;
 
+	// check if not enough time has passed to allow processing a scan again (compares using scan stamps)
+	if ( __scan_ptr->header.stamp - last_processed_scan_stamp__ < processing_period__ )
+		return;
+
+	last_processed_scan_stamp__ = __scan_ptr->header.stamp;
+
 	// add platform->lidar transform if not already available
 	if ( !saveSensorTransform(__scan_ptr->header) )
 	{
@@ -51,6 +60,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		return;
 	}
 
+	// detect and generate detections
 	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->angle_min, __scan_ptr->angle_max,
 		__scan_ptr->ranges, __scan_ptr->intensities, T_robot_to_sensor_2d__[__scan_ptr->header.frame_id]);
 
@@ -68,32 +78,10 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		detections.detections.push_back(detection__);
 	}
 
-	last_detections__[__scan_ptr->header.frame_id] = detections;
-}
-
-void ReflectorPerceptor::detectionsTimerCallback(const ros::TimerEvent & __timer_event)
-{
-	all_detections__.header.stamp = ros::Time::now();
-	all_detections__.detections.clear();
-	for ( auto & [lidar, detections] : last_detections__ )
-	{
-		if ( ros::Time::now() - detections.header.stamp > max_detection_age__ )
-		{
-			// forget detections that are too old now
-			detections.detections.clear();
-			continue;
-		}
-
-		all_detections__.detections.insert(
-			all_detections__.detections.end(),
-			detections.detections.begin(),
-			detections.detections.end()
-		);
-	}
-	detections_publisher__.publish(all_detections__);
-
+	// publish current detections
+	detections_publisher__.publish(detections);
 	if ( vizbose__ )
-		publishMarkers(all_detections__);
+		publishMarkers(detections, __scan_ptr->header.frame_id);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -190,13 +178,14 @@ bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 	return true;
 }
 
-void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections)
+void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections, const std::string & __sensor_name)
 {
 	// only publish if not emtpy, otherwise rviz generates error
 	if ( __detections.detections.empty() )
 		return;
 
 	marker__.header = __detections.header;
+	marker__.id = sensor_ids__[__sensor_name];
 
 	marker__.points.clear();
 	for ( auto & detection : __detections.detections )

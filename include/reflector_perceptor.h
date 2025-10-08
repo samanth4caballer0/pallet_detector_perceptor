@@ -36,10 +36,13 @@ class ReflectorPerceptor
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
 		std::vector<ros::Subscriber> lidar_subscribers__;
+		ros::Time last_processed_scan_stamp__ = ros::Time(0);
+		ros::Duration processing_period__;
 
 		ros::Publisher markers_publisher__;
 		bool vizbose__ = false;
 		visualization_msgs::Marker marker__;
+		std::map<std::string, int> sensor_ids__;
 
 		double reflector_size__;
 		double min_reflector_intensity__;
@@ -68,11 +71,9 @@ class ReflectorPerceptor
 		void subscribeToLidars();
 		void unsubscribeFromLidars();
 
-		void detectionsTimerCallback(const ros::TimerEvent & __timer_event);
-
 		bool saveSensorTransform(const std_msgs::Header & __header);
 
-		void publishMarkers(const target_detector::Detections & __detections);
+		void publishMarkers(const target_detector::Detections & __detections, const std::string & __sensor_name);
 
 		template <typename T>
 		bool getParamOrFail(const std::string & __name, T& __variable)
