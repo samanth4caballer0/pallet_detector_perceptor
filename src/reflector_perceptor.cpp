@@ -12,9 +12,12 @@ bool ReflectorPerceptor::init()
 	}
 
 	// update stuff that depends on given parameters
-	processing_period__ = ros::Duration(1.0/rate__);
 	for ( int i = 0; i < lidars__.size(); i++) // this is just to give a unique id to each sensor, being the id an int (for markers publishing)
+	{
 		sensor_ids__[lidars__.at(i)] = i;
+		processing_period__[lidars__.at(i)] = ros::Duration(1.0/rate__);
+		last_processed_scan_stamp__[lidars__.at(i)] = ros::Time(0);
+	}
 
 	initDetection();
 	initDetections();
@@ -44,11 +47,13 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	if ( !enabled__ )
 		return;
 
+	std::string sensor_name = __scan_ptr->header.frame_id;
+
 	// check if not enough time has passed to allow processing a scan again (compares using scan stamps)
-	if ( __scan_ptr->header.stamp - last_processed_scan_stamp__ < processing_period__ )
+	if ( __scan_ptr->header.stamp - last_processed_scan_stamp__[sensor_name] < processing_period__[sensor_name] )
 		return;
 
-	last_processed_scan_stamp__ = __scan_ptr->header.stamp;
+	last_processed_scan_stamp__[sensor_name] = __scan_ptr->header.stamp;
 
 	// add platform->lidar transform if not already available
 	if ( !saveSensorTransform(__scan_ptr->header) )
@@ -62,6 +67,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		__scan_ptr->ranges, __scan_ptr->intensities, T_robot_to_sensor_2d__[__scan_ptr->header.frame_id]);
 
 	detections__.header = __scan_ptr->header;
+	detections__.header.frame_id = robot_frame__;
 	detections__.detections.clear();
 	for ( auto & detected_reflector : detected_reflectors )
 	{

@@ -35,8 +35,8 @@ class ReflectorPerceptor
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
 		std::vector<ros::Subscriber> lidar_subscribers__;
-		ros::Time last_processed_scan_stamp__ = ros::Time(0);
-		ros::Duration processing_period__;
+		std::map<std::string, ros::Time> last_processed_scan_stamp__;
+		std::map<std::string, ros::Duration> processing_period__;
 
 		ros::Publisher markers_publisher__;
 		bool vizbose__ = false;

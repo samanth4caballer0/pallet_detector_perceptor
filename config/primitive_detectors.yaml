@@ -7,7 +7,7 @@ small_reflectors: # same as node namespace
   min_reflector_intensity: 250
   reflector_size: 0.04
   max_detection_range: 20
-  rate: 5.0 # lidar data is processed at this rate at maximum, scans received in-between are skipped
+  rate: 5.0 # lidar data is processed at this rate at maximum, scans received in-between are skipped. This applies by-lidar.
 
 big_reflectors:
   type: reflector
