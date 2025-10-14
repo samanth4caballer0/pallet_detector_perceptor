@@ -12,9 +12,10 @@ bool AlvarPerceptor::init()
 		return false;
 	}
 
+	//sleep(10);
 	initDetection();
 
-	enable_bundle_detection_publisher__ = nh__.advertise<std_msgs::Bool>("bundle_enable_detection", 1, false);
+	enable_bundle_detection_publisher__ = nh__.advertise<std_msgs::Bool>("bundle_enable_detection", 1, true);
 
 	if ( enabled__ )
 	{
@@ -145,7 +146,7 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 	}
 
 	detections_out_publisher__.publish(detections);
-	
+
 	if ( vizbose__ )
 		publishMarkers(detections);
 }
@@ -208,7 +209,7 @@ void AlvarPerceptor::publishMarkers(const target_detector::Detections & __detect
 	for ( auto & detection : __detections.detections )
 	{
 		marker__.id = detection.id;
-	
+
         geometry_msgs::Point origin, px, py, pz;
         double length = 0.3; // axis length
 
