@@ -7,7 +7,7 @@ small_reflectors: # same as node namespace
   min_reflector_intensity: 250
   reflector_size: 0.04
   max_detection_range: 20
-  rate: 5.0 # lidar data is processed at this rate at maximum, scans received in-between are skipped. This applies by-lidar.
+  scan_decimation: 5.0 # only every N-th scan is processed. Decimation = 3 -> process scan 1, skipp scans 2, 3, process scan 4, ...
 
 big_reflectors:
   type: reflector
@@ -18,7 +18,7 @@ big_reflectors:
   min_reflector_intensity: 250
   reflector_size: 0.06
   max_detection_range: 50
-  rate: 5.0
+  scan_decimation: 5.0
 
 alvars:
   type: alvar

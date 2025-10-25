@@ -11,12 +11,17 @@ bool ReflectorPerceptor::init()
 		return false;
 	}
 
+	if ( decimation__ < 1)
+	{
+		ROS_ERROR("Scan decimation must be 1 or higher");
+		return false;
+	}
+
 	// update stuff that depends on given parameters
 	for ( int i = 0; i < lidars__.size(); i++) // this is just to give a unique id to each sensor, being the id an int (for markers publishing)
 	{
 		sensor_ids__[lidars__.at(i)] = i;
-		processing_period__[lidars__.at(i)] = ros::Duration(1.0/rate__);
-		last_processed_scan_stamp__[lidars__.at(i)] = ros::Time(0);
+		scan_counter__[lidars__.at(i)] = 0;
 	}
 
 	initDetection();
@@ -47,13 +52,11 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	if ( !enabled__ )
 		return;
 
-	std::string sensor_name = __scan_ptr->header.frame_id;
-
-	// check if not enough time has passed to allow processing a scan again (compares using scan stamps)
-	if ( __scan_ptr->header.stamp - last_processed_scan_stamp__[sensor_name] < processing_period__[sensor_name] )
+	// check decimation
+	int& scan_count = scan_counter__[__scan_ptr->header.frame_id];
+	++scan_count;
+	if ((scan_count - 1) % decimation__ != 0)
 		return;
-
-	last_processed_scan_stamp__[sensor_name] = __scan_ptr->header.stamp;
 
 	// add platform->lidar transform if not already available
 	if ( !saveSensorTransform(__scan_ptr->header) )
@@ -116,7 +119,7 @@ bool ReflectorPerceptor::configureParameters()
 			getParamOrFail("min_reflector_intensity", min_reflector_intensity__) &&
 			getParamOrFail("max_detection_range", max_detection_range__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
-			getParamOrFail("rate", rate__);
+			getParamOrFail("scan_decimation", decimation__);
 }
 
 void ReflectorPerceptor::subscribeToLidars()
