@@ -65,7 +65,7 @@ class ReflectorPerceptor
 		bool enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response);
 		bool configureParameters();
 
-		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr);
+		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __sensor_name);
 		void subscribeToLidars();
 		void unsubscribeFromLidars();
 

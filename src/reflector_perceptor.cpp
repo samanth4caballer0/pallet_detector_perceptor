@@ -19,10 +19,7 @@ bool ReflectorPerceptor::init()
 
 	// update stuff that depends on given parameters
 	for ( int i = 0; i < lidars__.size(); i++) // this is just to give a unique id to each sensor, being the id an int (for markers publishing)
-	{
 		sensor_ids__[lidars__.at(i)] = i;
-		scan_counter__[lidars__.at(i)] = 0;
-	}
 
 	initDetection();
 	initDetections();
@@ -47,13 +44,13 @@ bool ReflectorPerceptor::init()
 	return true;
 };
 
-void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr)
+void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __sensor_name)
 {
 	if ( !enabled__ )
 		return;
 
 	// check decimation
-	int& scan_count = scan_counter__[__scan_ptr->header.frame_id];
+	int& scan_count = scan_counter__[__sensor_name];
 	++scan_count;
 	if ((scan_count - 1) % decimation__ != 0)
 		return;
@@ -72,6 +69,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	detections__.header = __scan_ptr->header;
 	detections__.header.frame_id = robot_frame__;
 	detections__.detections.clear();
+	detections__.sensor_name = __sensor_name;
 	for ( auto & detected_reflector : detected_reflectors )
 	{
 		detection__.pose.pose.position.x = detected_reflector.centroid_x;
@@ -86,7 +84,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	// publish current detections
 	detections_publisher__.publish(detections__);
 	if ( vizbose__ )
-		publishMarkers(detections__, __scan_ptr->header.frame_id);
+		publishMarkers(detections__, __sensor_name);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -126,7 +124,13 @@ void ReflectorPerceptor::subscribeToLidars()
 {
 	lidar_subscribers__.clear();
 	for ( auto & lidar : lidars__ )
-		lidar_subscribers__.push_back(nh__.subscribe(lidar, 1, &ReflectorPerceptor::laserScanCallback, this));
+	{
+		scan_counter__[lidar] = 0;
+		lidar_subscribers__.push_back(
+			nh__.subscribe<sensor_msgs::LaserScan>(lidar, 1,
+				boost::bind(&ReflectorPerceptor::laserScanCallback, this, _1, lidar))
+		);
+	}
 }
 
 void ReflectorPerceptor::unsubscribeFromLidars()
