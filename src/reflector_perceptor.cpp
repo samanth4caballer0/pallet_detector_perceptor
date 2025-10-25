@@ -44,13 +44,13 @@ bool ReflectorPerceptor::init()
 	return true;
 };
 
-void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __sensor_name)
+void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __source_name)
 {
 	if ( !enabled__ )
 		return;
 
 	// check decimation
-	int& scan_count = scan_counter__[__sensor_name];
+	int& scan_count = scan_counter__[__source_name];
 	++scan_count;
 	if ((scan_count - 1) % decimation__ != 0)
 		return;
@@ -69,7 +69,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	detections__.header = __scan_ptr->header;
 	detections__.header.frame_id = robot_frame__;
 	detections__.detections.clear();
-	detections__.sensor_name = __sensor_name;
+	detections__.source_name = __source_name;
 	for ( auto & detected_reflector : detected_reflectors )
 	{
 		detection__.pose.pose.position.x = detected_reflector.centroid_x;
@@ -84,7 +84,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	// publish current detections
 	detections_publisher__.publish(detections__);
 	if ( vizbose__ )
-		publishMarkers(detections__, __sensor_name);
+		publishMarkers(detections__, __source_name);
 }
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -183,14 +183,14 @@ bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 	return true;
 }
 
-void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections, const std::string & __sensor_name)
+void ReflectorPerceptor::publishMarkers(const target_detector::Detections & __detections, const std::string & __source_name)
 {
 	// only publish if not emtpy, otherwise rviz generates error
 	if ( __detections.detections.empty() )
 		return;
 
 	marker__.header = __detections.header;
-	marker__.id = sensor_ids__[__sensor_name];
+	marker__.id = sensor_ids__[__source_name];
 
 	marker__.points.clear();
 	for ( auto & detection : __detections.detections )

@@ -61,6 +61,7 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 	target_detector::Detections detections;
 	detections.header = __bundles.markers.front().header;
 	detections.header.frame_id = robot_frame__;
+	detections.source_name = "ar_track_alvar";
 
 	// transform each alvar marker from camera frame to robot frame
 	double range; // range in the camera xy plane, assumes camera x pointing forward and y pointing left

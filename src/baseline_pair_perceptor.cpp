@@ -34,6 +34,7 @@ void BaselinePairPerceptor::detectionsInCallback(const target_detector::Detectio
 	// we keep frame and timestamp of the detections from sensors
 	target_detector::Detections detections_out;
 	detections_out.header = __detections_in.header;
+	detections_out.source_name = __detections_in.source_name;
 
 	// check all detection pairs for correct baseline
 	double actual_baseline, angle;
