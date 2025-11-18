@@ -25,7 +25,7 @@ class ReflectorPerceptor
 
 		ros::NodeHandle nh__;
 		std::string perceptor_name__;
-		
+
 		std::map<std::string, target_detector::Detections> last_detections__;
 		ros::Publisher detections_publisher__;
 		target_detector::Detection detection__;
@@ -35,7 +35,7 @@ class ReflectorPerceptor
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
 		std::vector<ros::Subscriber> lidar_subscribers__;
-		std::map<std::string, int> scan_counter__;
+		std::map<std::string, unsigned int> scan_decimation_counter__;
 
 		ros::Publisher markers_publisher__;
 		bool vizbose__ = false;
@@ -120,7 +120,7 @@ class ReflectorPerceptor
 			marker__.color.a = 0.75;
 		};
 };
-	
+
 }
 
 #endif

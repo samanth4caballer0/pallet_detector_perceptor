@@ -49,11 +49,13 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 	if ( !enabled__ )
 		return;
 
-	// check decimation
-	int& scan_count = scan_counter__[__source_name];
-	++scan_count;
-	if ((scan_count - 1) % decimation__ != 0)
+	// apply decimation
+	scan_decimation_counter__[__source_name] ++;
+	if ( scan_decimation_counter__[__source_name] % decimation__ != 0)
+	{
 		return;
+	}
+	scan_decimation_counter__[__source_name] = 0;
 
 	// add platform->lidar transform if not already available
 	if ( !saveSensorTransform(__scan_ptr->header) )
@@ -125,7 +127,7 @@ void ReflectorPerceptor::subscribeToLidars()
 	lidar_subscribers__.clear();
 	for ( auto & lidar : lidars__ )
 	{
-		scan_counter__[lidar] = 0;
+		scan_decimation_counter__[lidar] = 0;
 		lidar_subscribers__.push_back(
 			nh__.subscribe<sensor_msgs::LaserScan>(lidar, 1,
 				boost::bind(&ReflectorPerceptor::laserScanCallback, this, _1, lidar))
