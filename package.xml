@@ -30,5 +30,6 @@
 	<depend>visualization_msgs</depend>
 	<depend>std_msgs</depend>
 	<depend>ar_track_alvar_msgs</depend>
+  <depend>sick_safetyscanners</depend>
 
 </package>

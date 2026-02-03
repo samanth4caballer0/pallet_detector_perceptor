@@ -9,6 +9,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sick_safetyscanners/ExtendedLaserScanMsg.h>
 #include <visualization_msgs/Marker.h>
 
 #include <target_detector/DetectorEnable.h>
@@ -42,6 +43,7 @@ class ReflectorPerceptor
 		visualization_msgs::Marker marker__;
 		std::map<std::string, int> sensor_ids__;
 
+		std::string scan_type__;
 		double reflector_size__;
 		double min_reflector_intensity__;
 		double max_detection_range__;
@@ -66,6 +68,7 @@ class ReflectorPerceptor
 		bool configureParameters();
 
 		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __sensor_name);
+		void laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __scan_ptr, const std::string & __sensor_name);
 		void subscribeToLidars();
 		void unsubscribeFromLidars();
 

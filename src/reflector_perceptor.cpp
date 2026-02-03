@@ -89,6 +89,52 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		publishMarkers(detections__, __source_name);
 }
 
+void ReflectorPerceptor::laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __scan_ptr, const std::string & __source_name)
+{
+	if ( !enabled__ )
+		return;
+
+	// apply decimation
+	scan_decimation_counter__[__source_name] ++;
+	if ( scan_decimation_counter__[__source_name] % decimation__ != 0)
+	{
+		return;
+	}
+	scan_decimation_counter__[__source_name] = 0;
+
+	// add platform->lidar transform if not already available
+	if ( !saveSensorTransform(__scan_ptr->laser_scan.header) )
+	{
+		ROS_WARN("Failed to process scan because of missing tf");
+		return;
+	}
+
+	// detect and generate detections
+	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->laser_scan.angle_min, __scan_ptr->laser_scan.angle_max,
+		__scan_ptr->laser_scan.ranges, __scan_ptr->laser_scan.intensities, __scan_ptr->reflektor_status, T_robot_to_sensor_2d__[__scan_ptr->laser_scan.header.frame_id]);
+
+	detections__.header = __scan_ptr->laser_scan.header;
+	detections__.header.frame_id = robot_frame__;
+	detections__.detections.clear();
+	detections__.source_name = __source_name;
+	for ( auto & detected_reflector : detected_reflectors )
+	{
+		detection__.pose.pose.position.x = detected_reflector.centroid_x;
+		detection__.pose.pose.position.y = detected_reflector.centroid_y;
+		detection__.pose.covariance[0] = detected_reflector.covariance_xx;
+		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
+		detection__.intensity = detected_reflector.intensity;
+		detection__.supports = detected_reflector.supports;
+		detections__.detections.push_back(detection__);
+	}
+
+	// publish current detections
+	detections_publisher__.publish(detections__);
+	if ( vizbose__ )
+		publishMarkers(detections__, __source_name);
+
+}
+
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
 {
 	if ( !enabled__ && __request.enable )
@@ -112,11 +158,29 @@ bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request
 bool ReflectorPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
+
+	// parse optional parameters
+	if( !getParamOrFail("scan_type", scan_type__) )
+		return false;
+	
+	if( scan_type__ != "sensor_msgs/LaserScan" && 
+		scan_type__ != "sick_safetyscanners/ExtendedLaserScanMsg")
+	{
+		ROS_ERROR("Unknown scan_type");
+		return false;	
+	}
+
+	if (scan_type__ == "sensor_msgs/LaserScan")
+    {
+        if (!getParamOrFail("min_reflector_intensity", min_reflector_intensity__))
+            return false;
+    }
+
+	// common parameters
 	return	getParamOrFail("enabled_by_default", enabled__) &&
 			getParamOrFail("vizbose", vizbose__) &&
 			getParamOrFail("lidars", lidars__) &&
 			getParamOrFail("reflector_size", reflector_size__) &&
-			getParamOrFail("min_reflector_intensity", min_reflector_intensity__) &&
 			getParamOrFail("max_detection_range", max_detection_range__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
 			getParamOrFail("scan_decimation", decimation__);
@@ -128,10 +192,22 @@ void ReflectorPerceptor::subscribeToLidars()
 	for ( auto & lidar : lidars__ )
 	{
 		scan_decimation_counter__[lidar] = 0;
-		lidar_subscribers__.push_back(
-			nh__.subscribe<sensor_msgs::LaserScan>(lidar, 1,
-				boost::bind(&ReflectorPerceptor::laserScanCallback, this, _1, lidar))
-		);
+		if ( scan_type__ == "sensor_msgs/LaserScan" )
+		{	
+			lidar_subscribers__.push_back(
+				nh__.subscribe<sensor_msgs::LaserScan>(lidar, 1,
+					boost::bind(&ReflectorPerceptor::laserScanCallback, this, _1, lidar)));
+		}
+		else if ( scan_type__ == "sick_safetyscanners/ExtendedLaserScanMsg" )
+		{
+			lidar_subscribers__.push_back(
+				nh__.subscribe<sick_safetyscanners::ExtendedLaserScanMsg>(lidar, 1,
+					boost::bind(&ReflectorPerceptor::laserScanExtendedCallback, this, _1, lidar)));
+		}
+		else
+		{
+			ROS_ERROR("Unable to subscribe to lidars. Unknown scan_type");
+		}
 	}
 }
 

@@ -36,6 +36,8 @@ class ReflectorDetector
 
 		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end,
 			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const Eigen::Isometry2d & __T_platform_sensor);
+		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end, 
+			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits, const Eigen::Isometry2d & __T_platform_sensor);
 
 	protected:
 

@@ -14,6 +14,7 @@ find_package( catkin REQUIRED COMPONENTS
 	visualization_msgs
 	std_msgs
 	ar_track_alvar_msgs
+	sick_safetyscanners
 )
 
 add_message_files(
@@ -45,6 +46,7 @@ catkin_package(
 		visualization_msgs
 		std_msgs
 		ar_track_alvar_msgs
+		sick_safetyscanners
 )
 
 include_directories(
