@@ -46,78 +46,81 @@ bool ReflectorPerceptor::init()
 
 void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __source_name)
 {
-	if ( !enabled__ )
+	if (!enabled__)
 		return;
 
-	// apply decimation
-	scan_decimation_counter__[__source_name] ++;
-	if ( scan_decimation_counter__[__source_name] % decimation__ != 0)
-	{
-		return;
-	}
-	scan_decimation_counter__[__source_name] = 0;
-
-	// add platform->lidar transform if not already available
-	if ( !saveSensorTransform(__scan_ptr->header) )
-	{
-		ROS_WARN("Failed to process scan because of missing tf");
-		return;
-	}
-
-	// detect and generate detections
-	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->angle_min, __scan_ptr->angle_max,
-		__scan_ptr->ranges, __scan_ptr->intensities, T_robot_to_sensor_2d__[__scan_ptr->header.frame_id]);
-
-	detections__.header = __scan_ptr->header;
-	detections__.header.frame_id = robot_frame__;
-	detections__.detections.clear();
-	detections__.source_name = __source_name;
-	for ( auto & detected_reflector : detected_reflectors )
-	{
-		detection__.pose.pose.position.x = detected_reflector.centroid_x;
-		detection__.pose.pose.position.y = detected_reflector.centroid_y;
-		detection__.pose.covariance[0] = detected_reflector.covariance_xx;
-		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
-		detection__.intensity = detected_reflector.intensity;
-		detection__.supports = detected_reflector.supports;
-		detections__.detections.push_back(detection__);
-	}
-
-	// publish current detections
-	detections_publisher__.publish(detections__);
-	if ( vizbose__ )
-		publishMarkers(detections__, __source_name);
+	processScan(
+		__scan_ptr->header,
+		__source_name,
+		__scan_ptr->angle_min,
+		__scan_ptr->angle_max,
+		__scan_ptr->ranges,
+		__scan_ptr->intensities,
+		nullptr);
 }
 
 void ReflectorPerceptor::laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __scan_ptr, const std::string & __source_name)
 {
 	if ( !enabled__ )
 		return;
+	processScan(
+		__scan_ptr->laser_scan.header,
+		__source_name,
+		__scan_ptr->laser_scan.angle_min,
+		__scan_ptr->laser_scan.angle_max,
+		__scan_ptr->laser_scan.ranges,
+		__scan_ptr->laser_scan.intensities,
+		&__scan_ptr->reflektor_status);
+}
 
+void ReflectorPerceptor::processScan(
+	const std_msgs::Header & __header,
+	const std::string & __source_name,
+	double __angle_min,
+	double __angle_max,
+	const std::vector<float> & __ranges,
+	const std::vector<float> & __intensities,
+	const std::vector<uint8_t> * __reflector_hits)
+{
 	// apply decimation
-	scan_decimation_counter__[__source_name] ++;
-	if ( scan_decimation_counter__[__source_name] % decimation__ != 0)
-	{
+	scan_decimation_counter__[__source_name]++;
+	if (scan_decimation_counter__[__source_name] % decimation__ != 0)
 		return;
-	}
 	scan_decimation_counter__[__source_name] = 0;
 
 	// add platform->lidar transform if not already available
-	if ( !saveSensorTransform(__scan_ptr->laser_scan.header) )
+	if (!saveSensorTransform(__header))
 	{
 		ROS_WARN("Failed to process scan because of missing tf");
 		return;
 	}
 
 	// detect and generate detections
-	std::vector<Detectors::ReflectorDetection> detected_reflectors = detector__->detect(__scan_ptr->laser_scan.angle_min, __scan_ptr->laser_scan.angle_max,
-		__scan_ptr->laser_scan.ranges, __scan_ptr->laser_scan.intensities, __scan_ptr->reflektor_status, T_robot_to_sensor_2d__[__scan_ptr->laser_scan.header.frame_id]);
+	std::vector<Detectors::ReflectorDetection> detected_reflectors;
 
-	detections__.header = __scan_ptr->laser_scan.header;
+	if (__reflector_hits)
+	{
+		detected_reflectors = detector__->detect(
+			__angle_min, __angle_max,
+			__ranges, __intensities,
+			*__reflector_hits,
+			T_robot_to_sensor_2d__[__header.frame_id]);
+	}
+	else
+	{
+		detected_reflectors = detector__->detect(
+			__angle_min, __angle_max,
+			__ranges, __intensities,
+			T_robot_to_sensor_2d__[__header.frame_id]);
+	}
+
+	// fill detections msg
+	detections__.header = __header;
 	detections__.header.frame_id = robot_frame__;
 	detections__.detections.clear();
 	detections__.source_name = __source_name;
-	for ( auto & detected_reflector : detected_reflectors )
+
+	for (auto & detected_reflector : detected_reflectors)
 	{
 		detection__.pose.pose.position.x = detected_reflector.centroid_x;
 		detection__.pose.pose.position.y = detected_reflector.centroid_y;
@@ -125,15 +128,16 @@ void ReflectorPerceptor::laserScanExtendedCallback(const sick_safetyscanners::Ex
 		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
 		detection__.intensity = detected_reflector.intensity;
 		detection__.supports = detected_reflector.supports;
+
 		detections__.detections.push_back(detection__);
 	}
 
 	// publish current detections
 	detections_publisher__.publish(detections__);
-	if ( vizbose__ )
+	if (vizbose__)
 		publishMarkers(detections__, __source_name);
-
 }
+
 
 bool ReflectorPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
 {
@@ -171,10 +175,10 @@ bool ReflectorPerceptor::configureParameters()
 	}
 
 	if (scan_type__ == "sensor_msgs/LaserScan")
-    {
-        if (!getParamOrFail("min_reflector_intensity", min_reflector_intensity__))
-            return false;
-    }
+	{
+		if (!getParamOrFail("min_reflector_intensity", min_reflector_intensity__))
+			return false;
+	}
 
 	// common parameters
 	return	getParamOrFail("enabled_by_default", enabled__) &&

@@ -69,6 +69,8 @@ class ReflectorPerceptor
 
 		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __sensor_name);
 		void laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __scan_ptr, const std::string & __sensor_name);
+		void processScan(const std_msgs::Header & __header, const std::string & __source_name, double __angle_min, double __angle_max, const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> * __reflector_hits);
+
 		void subscribeToLidars();
 		void unsubscribeFromLidars();
 
