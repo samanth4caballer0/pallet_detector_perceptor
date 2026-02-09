@@ -11,34 +11,12 @@ bool ReflectorDetector::configure(const double & __reflector_size, const double 
 	return true;
 }
 
-std::vector<ReflectorDetection> ReflectorDetector::detect(const double & __angle_init, const double & __angle_end,
-	const std::vector<float> & __ranges, const std::vector<float> & __intensities, const Eigen::Isometry2d & __T_platform_sensor)
-{
-	return detectImplementation(
-		__angle_init, __angle_end,
-		__ranges, __intensities,
-		nullptr,
-		ReflectorDetectionMode::BY_INTENSITY,
-		__T_platform_sensor);
-}
-
-std::vector<ReflectorDetection> ReflectorDetector::detect(const double & __angle_init, const double & __angle_end, const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits, const Eigen::Isometry2d & __T_platform_sensor)
-{
-	return detectImplementation(
-		__angle_init, __angle_end,
-		__ranges, __intensities,
-		&__reflector_hits,
-		ReflectorDetectionMode::BY_HITS,
-		__T_platform_sensor);
-}
-
-std::vector<ReflectorDetection> ReflectorDetector::detectImplementation(
+std::vector<ReflectorDetection> ReflectorDetector::detect(
 	const double & __angle_init,
 	const double & __angle_end,
 	const std::vector<float> & __ranges,
 	const std::vector<float> & __intensities,
-	const std::vector<uint8_t> * __reflector_hits, // nullptr if not used
-	ReflectorDetectionMode __mode,
+	const std::vector<uint8_t> & __reflector_hits, // empty if not used
 	const Eigen::Isometry2d & __T_platform_sensor)
 {
 	std::vector<ReflectorDetection> detections;
@@ -46,8 +24,11 @@ std::vector<ReflectorDetection> ReflectorDetector::detectImplementation(
 	// check empty conditions
 	if (__ranges.empty() || __intensities.empty() || __ranges.size() != __intensities.size())
 		return detections;
-	if (__mode == ReflectorDetectionMode::BY_HITS && (!__reflector_hits || __reflector_hits->size() != __ranges.size()))
+	if (__reflector_hits.size() > 0 && ( __reflector_hits.size() != __ranges.size()) )
 		return detections;
+	
+	// if empty reflector hits, we check via intensity
+	bool by_intensity = (__reflector_hits.size() == 0);
 
 	// precomputes fixed part involving tangent
 	double angle_increment = ( __angle_end - __angle_init ) / __ranges.size();
@@ -64,17 +45,11 @@ std::vector<ReflectorDetection> ReflectorDetector::detectImplementation(
 	{
 		bool valid = false;
 
-		switch (__mode)
-		{
-			case ReflectorDetectionMode::BY_INTENSITY:
-				valid = __intensities[i] > min_reflector_intensity__;
-				break;
-
-			case ReflectorDetectionMode::BY_HITS:
-				valid = ((*__reflector_hits)[i] > 0);
-				break;
-		}
-
+		if( by_intensity )
+			valid = __intensities[i] > min_reflector_intensity__;
+		else
+			valid = ((__reflector_hits)[i] > 0);
+		
 		if (!valid || __ranges[i] >= max_detection_range__)
 			continue;
 

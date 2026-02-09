@@ -22,12 +22,6 @@ struct ReflectorDetection
 		: supports(__s), intensity(__i), centroid_x(__x), centroid_y(__y) {}
 };
 
-enum class ReflectorDetectionMode
-{
-    BY_INTENSITY,
-    BY_HITS
-};
-
 class ReflectorDetector
 {
 	protected:
@@ -41,12 +35,7 @@ class ReflectorDetector
 		bool configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range);
 
 		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end,
-			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const Eigen::Isometry2d & __T_platform_sensor);
-		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end, 
-			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits, const Eigen::Isometry2d & __T_platform_sensor);
-		std::vector<ReflectorDetection> detectImplementation(const double & __angle_init, const double & __angle_end,
-			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> * __reflector_hits, // nullptr if not used
-			ReflectorDetectionMode __mode,
+			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits, // empty if not used
 			const Eigen::Isometry2d & __T_platform_sensor);
 
 	protected:

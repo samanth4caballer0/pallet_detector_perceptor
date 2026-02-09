@@ -48,7 +48,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 {
 	if (!enabled__)
 		return;
-
+	std::vector<uint8_t> empty_vector;
 	processScan(
 		__scan_ptr->header,
 		__source_name,
@@ -56,7 +56,7 @@ void ReflectorPerceptor::laserScanCallback(const sensor_msgs::LaserScanConstPtr 
 		__scan_ptr->angle_max,
 		__scan_ptr->ranges,
 		__scan_ptr->intensities,
-		nullptr);
+		empty_vector);
 }
 
 void ReflectorPerceptor::laserScanExtendedCallback(const sick_safetyscanners::ExtendedLaserScanMsgConstPtr & __scan_ptr, const std::string & __source_name)
@@ -70,7 +70,7 @@ void ReflectorPerceptor::laserScanExtendedCallback(const sick_safetyscanners::Ex
 		__scan_ptr->laser_scan.angle_max,
 		__scan_ptr->laser_scan.ranges,
 		__scan_ptr->laser_scan.intensities,
-		&__scan_ptr->reflektor_status);
+		__scan_ptr->reflektor_status);
 }
 
 void ReflectorPerceptor::processScan(
@@ -80,7 +80,7 @@ void ReflectorPerceptor::processScan(
 	double __angle_max,
 	const std::vector<float> & __ranges,
 	const std::vector<float> & __intensities,
-	const std::vector<uint8_t> * __reflector_hits)
+	const std::vector<uint8_t> & __reflector_hits)
 {
 	// apply decimation
 	scan_decimation_counter__[__source_name]++;
@@ -98,21 +98,11 @@ void ReflectorPerceptor::processScan(
 	// detect and generate detections
 	std::vector<Detectors::ReflectorDetection> detected_reflectors;
 
-	if (__reflector_hits)
-	{
-		detected_reflectors = detector__->detect(
-			__angle_min, __angle_max,
-			__ranges, __intensities,
-			*__reflector_hits,
-			T_robot_to_sensor_2d__[__header.frame_id]);
-	}
-	else
-	{
-		detected_reflectors = detector__->detect(
-			__angle_min, __angle_max,
-			__ranges, __intensities,
-			T_robot_to_sensor_2d__[__header.frame_id]);
-	}
+	detected_reflectors = detector__->detect(
+		__angle_min, __angle_max,
+		__ranges, __intensities,
+		__reflector_hits,
+		T_robot_to_sensor_2d__[__header.frame_id]);
 
 	// fill detections msg
 	detections__.header = __header;
