@@ -95,7 +95,7 @@ class TmkUwbPerceptor
 			marker__.pose.orientation.y = 0.0;
 			marker__.pose.orientation.z = 0.0;
 			marker__.pose.orientation.w = 1.0;
-			marker__.scale.x = 0.05;	// arrow length
+			marker__.scale.x = 0.25;	// arrow length
 			marker__.scale.y = 0.05;	// arrow width
 			marker__.scale.z = 0.05;	// arrow height
 			marker__.ns = perceptor_name__;
