@@ -1,0 +1,153 @@
+#include "tmk_uwb_perceptor.h"
+
+namespace TargetDetector
+{
+
+bool TmkUwbPerceptor::init()
+{
+
+	if ( !configureParameters() )
+	{
+		ROS_ERROR("Failed to configure tmk_uwb detection");
+		return false;
+	}
+
+	initDetection();
+	initDetections();
+
+	if ( enabled__ )
+		subscribeToData();
+
+	if ( vizbose__ )
+	{
+		initMarker();
+		markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
+	}
+
+	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
+
+	detections_out_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	enable_server__ = nh__.advertiseService("enable", &TmkUwbPerceptor::enableCallback, this);
+
+	return true;
+};
+
+void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg)
+{
+	if ( !enabled__ )
+		return;
+
+
+	// check if platform->sensor transform exists, and save it if not
+	if ( !saveSensorTransform(__msg.header) )
+	{
+		ROS_WARN("Failed to process uwb because of missing tf to sensor");
+		return;
+	}
+
+	// Out message, keep the time stamp from the original header
+	target_detector::Detections detections;
+	detections.header = __msg.header;
+	detections.header.frame_id = robot_frame__;
+	detections.source_name = "tmk_uwb";
+
+	// transform each tmk_uwb measurement from sensor frame to robot frame
+	geometry_msgs::Pose sensor_pose;
+	sensor_pose.position.x = __msg.range*std::cos(__msg.azimuth);
+	sensor_pose.position.y = __msg.range*std::sin(__msg.azimuth);
+	sensor_pose.orientation.z = std::sin((M_PI + __msg.azimuth - __msg.counterpart_azimuth) /2.0);
+	sensor_pose.orientation.w = std::cos((M_PI + __msg.azimuth - __msg.counterpart_azimuth) /2.0);
+	
+	geometry_msgs::Pose robot_pose;
+	tf2::doTransform(sensor_pose, robot_pose, T_sensor_to_robot__[__msg.header.frame_id]);
+
+	// convert to detection
+	detection__.id = __msg.anchor_id;
+	detection__.pose.pose = robot_pose;
+	detections.detections.push_back(detection__);
+
+	detections_out_publisher__.publish(detections);
+
+	if ( vizbose__ )
+		publishMarkers(detections);
+}
+
+bool TmkUwbPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
+{
+	// we update id, even if already enabled
+	if ( !enabled__ && __request.enable )
+		subscribeToData();
+
+	if ( enabled__ && !__request.enable )
+	{
+		unsubscribeFromData();
+
+		// since we disable, make sure to publish an empty detections message to clear interested parties
+		detections__.header.stamp = ros::Time::now();
+		detections__.detections.clear();
+		detections_out_publisher__.publish(detections__);
+	}
+
+	enabled__ = __request.enable;
+	__response.success = true;
+	return true;
+}
+
+bool TmkUwbPerceptor::configureParameters()
+{
+	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
+	return	getParamOrFail("enabled_by_default", enabled__) &&
+			getParamOrFail("robot_frame", robot_frame__) &&
+			getParamOrFail("vizbose", vizbose__);
+}
+
+void TmkUwbPerceptor::subscribeToData()
+{
+	detections_in_subscriber__ = nh__.subscribe("detections_in", 1, &TmkUwbPerceptor::detectionsInCallback, this);
+}
+
+void TmkUwbPerceptor::unsubscribeFromData()
+{
+	detections_in_subscriber__.shutdown();
+}
+
+void TmkUwbPerceptor::publishMarkers(const target_detector::Detections & __detections)
+{
+	// only publish if not emtpy, otherwise rviz generates error
+	if ( __detections.detections.empty() )
+		return;
+
+	marker__.header = __detections.header;
+	for ( auto & detection : __detections.detections )
+	{
+		marker__.id = detection.id;
+		marker__.pose = detection.pose.pose;
+	}
+
+	markers_publisher__.publish(marker__);
+}
+
+bool TmkUwbPerceptor::saveSensorTransform(const std_msgs::Header & __header)
+{
+	if ( !T_sensor_to_robot__.contains(__header.frame_id) )
+	{
+		geometry_msgs::TransformStamped T_sensor_to_robot;
+
+		try
+		{
+			// get _transform from tf
+			T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(0.0));
+			T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
+		}
+		catch (tf2::TransformException & __ex)
+		{
+			ROS_WARN("%s", __ex.what());
+			ros::Duration(1.0).sleep();
+			return false;
+		}
+	}
+
+	return true;
+}
+
+}

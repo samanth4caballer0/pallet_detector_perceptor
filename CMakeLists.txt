@@ -15,6 +15,7 @@ find_package( catkin REQUIRED COMPONENTS
 	std_msgs
 	ar_track_alvar_msgs
 	sick_safetyscanners
+	tmk_uwb
 )
 
 add_message_files(
@@ -47,6 +48,7 @@ catkin_package(
 		std_msgs
 		ar_track_alvar_msgs
 		sick_safetyscanners
+		tmk_uwb
 )
 
 include_directories(
@@ -104,12 +106,24 @@ target_link_libraries(alvar_perceptor
 	${catkin_LIBRARIES}
 )
 
+add_executable(tmk_uwb_perceptor
+	src/tmk_uwb_perceptor_main.cpp
+	src/tmk_uwb_perceptor.cpp
+)
+add_dependencies(tmk_uwb_perceptor
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(tmk_uwb_perceptor
+	${catkin_LIBRARIES}
+)
 
 install(
 	TARGETS
 		reflector_perceptor
 		baseline_pair_perceptor
 		alvar_perceptor
+		tmk_uwb_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
