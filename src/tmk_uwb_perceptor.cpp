@@ -49,7 +49,7 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 	target_detector::Detections detections;
 	detections.header = __msg.header;
 	detections.header.frame_id = robot_frame__;
-	detections.source_name = "tmk_uwb";
+	detections.source_name = "tmk_uwb_" + std::to_string(__msg.anchor_id);
 
 	// transform each tmk_uwb measurement from sensor frame to robot frame
 	geometry_msgs::Pose sensor_pose;
