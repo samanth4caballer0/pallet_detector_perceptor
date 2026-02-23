@@ -30,7 +30,9 @@
 	<depend>visualization_msgs</depend>
 	<depend>std_msgs</depend>
 	<depend>ar_track_alvar_msgs</depend>
-  <depend>sick_safetyscanners</depend>
-  <depend>tmk_uwb</depend>
+	<depend>sick_safetyscanners</depend>
+	<depend>tmk_uwb</depend>
+	<depend>pcl_ros</depend>
+	<depend>pcl_conversions</depend>
 
 </package>

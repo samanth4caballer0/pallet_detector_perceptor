@@ -5,6 +5,7 @@ uint8 REFLECTOR_FROM_BOOL = 2
 uint8 BASELINE_PAIR = 3
 uint8 ALVAR = 4
 uint8 TMK_UWB = 5
+uint8 VERTICAL_CYLINDER = 6
 
 # some detections have an associated id (AR markers, object class ,... )
 # If no id, set to -1

@@ -4,6 +4,12 @@ project(target_detector)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Point cloud Library
+FIND_PACKAGE(PCL 1.3 REQUIRED COMPONENTS)
+INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
+LINK_DIRECTORIES(${PCL_LIBRARY_DIRS})
+ADD_DEFINITIONS(${PCL_DEFINITIONS})
+
 find_package( catkin REQUIRED COMPONENTS
 	roscpp
 	message_generation
@@ -16,6 +22,8 @@ find_package( catkin REQUIRED COMPONENTS
 	ar_track_alvar_msgs
 	sick_safetyscanners
 	tmk_uwb
+	pcl_ros
+	pcl_conversions
 )
 
 add_message_files(
@@ -49,6 +57,8 @@ catkin_package(
 		ar_track_alvar_msgs
 		sick_safetyscanners
 		tmk_uwb
+		pcl_ros
+		pcl_conversions
 )
 
 include_directories(
@@ -59,13 +69,16 @@ include_directories(
 add_library(detectors
 	src/detectors/reflector_detector.cpp
 	src/detectors/cluster.cpp
+	src/detectors/detector_pcl_base.cpp
+	src/detectors/detector_pcl_barrel.cpp
 )
-add_dependencies(detectors
-	${catkin_EXPORTED_TARGETS}
-	${target_detector_EXPORTED_TARGETS}
-)
-target_link_libraries(detectors
-	${catkin_LIBRARIES}
+#add_dependencies(detectors
+#	${catkin_EXPORTED_TARGETS}
+#	${target_detector_EXPORTED_TARGETS}
+#)
+target_link_libraries(
+	detectors
+	${PCL_LIBRARIES}
 )
 
 add_executable(reflector_perceptor
@@ -117,6 +130,21 @@ add_dependencies(tmk_uwb_perceptor
 target_link_libraries(tmk_uwb_perceptor
 	${catkin_LIBRARIES}
 )
+
+add_executable(barrel_perceptor
+	src/barrel_perceptor_main.cpp
+	src/barrel_perceptor.cpp
+)
+add_dependencies(barrel_perceptor
+	detectors
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(barrel_perceptor
+	detectors
+	${catkin_LIBRARIES}
+)
+
 
 install(
 	TARGETS
