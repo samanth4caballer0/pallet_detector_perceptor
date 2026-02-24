@@ -62,6 +62,9 @@ class BarrelPerceptor
 		void pointCloudCallback(
 			const sensor_msgs::PointCloud2ConstPtr& __cloud_in);
 
+		// publish rviz markers
+		void publishMarkers(const target_detector::Detections & __detections_msg);
+
 }; //end of class
 
 } //end of namespace

@@ -152,6 +152,7 @@ install(
 		baseline_pair_perceptor
 		alvar_perceptor
 		tmk_uwb_perceptor
+		barrel_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -164,4 +165,16 @@ install(TARGETS detectors
 install(DIRECTORY include/detectors/
 	DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 	FILES_MATCHING PATTERN "*.h"
+)
+
+install(DIRECTORY launch/
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch/
+)
+
+install(DIRECTORY config/
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config/
+)
+
+install(DIRECTORY rviz/
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz/
 )

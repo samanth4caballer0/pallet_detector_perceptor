@@ -24,8 +24,9 @@ bool BarrelPerceptor::init()
 	cloud_in_topic_name__ = "camera";
 
 	// ROS API
-	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &BarrelPerceptor::enableServiceCallback, this);
+	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	point_cloud_publisher__ = nh__.advertise<sensor_msgs::PointCloud2>("cloud_out", 1, false);
 	if ( vizbose__ )
 	{
 		viz_markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
@@ -94,16 +95,20 @@ void BarrelPerceptor::pointCloudCallback(
 	pcl::fromROSMsg (*__cloud_in, *cloud_in);
 
 	// Crop to ROI
-	Eigen::Vector4f crop_max(3.0,  1.5, 0.0, 1.0);
-	Eigen::Vector4f crop_min(0.5, -1.5, -1.0, 1.0);
+	Eigen::Vector4f crop_max(1.0,  1.0, 3.0, 1.0);
+	Eigen::Vector4f crop_min(-1.0, 0.2, 0.5, 1.0);
 	detector__.crop(crop_max, crop_min, cloud_in, cloud_crop);
+	//point_cloud_publisher__.publish(cloud_crop);
+	//return;
 
 	// remove outliers
-	detector__.removeOutliers(cloud_crop, cloud_filtered);
+	//detector__.removeOutliers(cloud_crop, cloud_filtered);
 	//point_cloud_publisher__.publish(cloud_filtered);
+	//return;
 
 	// detect barrel
-	detector__.detect(1.0, cloud_filtered, cloud_detection, T_O_C, confidence_level, vizbose__);
+	detector__.detect(0.5, cloud_crop, cloud_detection, T_O_C, confidence_level, vizbose__);
+	//detector__.detect(0.5, cloud_filtered, cloud_detection, T_O_C, confidence_level, vizbose__);
 
 	// fill ROS message & publish
 	target_detector::Detections detections_msg;
@@ -126,8 +131,34 @@ void BarrelPerceptor::pointCloudCallback(
 	if ( vizbose__ )
 	{
 		point_cloud_publisher__.publish(cloud_detection);
-		//publishMarkers(...);
+		publishMarkers(detections_msg);
 	}
+}
+
+void BarrelPerceptor::publishMarkers(
+	const target_detector::Detections & __detections_msg)
+{
+	visualization_msgs::Marker marker_msg;
+	marker_msg.header = __detections_msg.header;
+	marker_msg.ns = "barrel";
+    marker_msg.id = 0;
+	marker_msg.type = visualization_msgs::Marker::CYLINDER;
+	marker_msg.action = visualization_msgs::Marker::ADD;
+	marker_msg.pose.position.x = __detections_msg.detections[0].pose.pose.position.x;
+	marker_msg.pose.position.y = __detections_msg.detections[0].pose.pose.position.y+0.5;
+	marker_msg.pose.position.z = __detections_msg.detections[0].pose.pose.position.z;
+	marker_msg.pose.orientation.x = std::sin(M_PI/4.);
+	marker_msg.pose.orientation.y = 0.0;
+	marker_msg.pose.orientation.z = 0.0;
+	marker_msg.pose.orientation.w = std::cos(M_PI/4.);
+	marker_msg.scale.x = 1.0;
+	marker_msg.scale.y = 1.0;
+	marker_msg.scale.z = 1.0;
+	marker_msg.color.a = 0.8; // Don't forget to set the alpha!
+	marker_msg.color.r = 0.8;
+	marker_msg.color.g = 0.8;
+	marker_msg.color.b = 0.8;
+	viz_markers_publisher__.publish(marker_msg);
 }
 
 } // end of namespace

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!--<arg name="robot_id" default="dingo" />-->
+	<arg name="robot_id" default="robot_1" />
+	<arg name="bag_file_name" value="my_bag"/>
+	<arg name="enable_rviz" default="true" />
+
+	<!-- Rosbag play -->
+	<node
+		pkg="rosbag"
+		type="play"
+		name="rosbag_play"
+		output="screen"
+		args="--clock -r 1 -s 0 /home/beta/datasets/electrojet/2026-02-09-13-32-57.bag" >
+	</node>
+
+  	<!-- BMCL Localization in debug namespace-->
+  	<group ns="debug/perception">
+
+		<rosparam file="$(find target_detector)/config/barrel_detector.yaml" command="load"/>
+		<param name="/use_sim_time" type="bool" value="true" />
+		<group ns="barrel_detector">
+			<node
+				pkg="target_detector"
+				type="barrel_perceptor"
+				name="barrel_perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf_filtered"/>
+				<remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+			</node>
+		</group>
+	</group>
+
+	<!-- rviz-->
+	<group if="$(arg enable_rviz)">
+		<remap from="/tf" to="/$(arg robot_id)/tf"/>
+		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		<param name="/use_sim_time" type="bool" value="true" />
+		<node
+			name="rviz"
+			pkg="rviz"
+			type="rviz"
+			args="-d $(find target_detector)/rviz/barrel_detector.rviz">
+		</node>
+	</group>
+
+</launch>
