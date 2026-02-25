@@ -119,6 +119,7 @@ void BarrelPerceptor::pointCloudCallback(
 	detections_msg.header = __cloud_in->header;
 	detections_msg.source_name = "camera";
 	detections_msg.detections.resize(1);
+	detections_msg.detections[0].type = target_detector::Detection::BARREL; 
 	detections_msg.detections[0].pose.pose.position.x = T_O_C.translation().x();
 	detections_msg.detections[0].pose.pose.position.y = T_O_C.translation().y();
 	detections_msg.detections[0].pose.pose.position.z = T_O_C.translation().z();
