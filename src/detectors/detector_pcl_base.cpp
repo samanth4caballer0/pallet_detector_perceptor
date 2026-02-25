@@ -29,6 +29,16 @@ void DetectorPclBase::crop(
 	box_filter.filter(*__cloud_out);
 }
 
+void DetectorPclBase::voxelDownsampling(
+	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)
+{
+    pcl::VoxelGrid<pcl::PointXYZ> voxel_grid;
+    voxel_grid.setInputCloud(__cloud_in);
+    voxel_grid.setLeafSize(0.01f, 0.01f, 0.01f);  // 1cm x 1cm x 1cm voxels
+    voxel_grid.filter(*__cloud_out);
+}
+
 void DetectorPclBase::removeOutliers(
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)

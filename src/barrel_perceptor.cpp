@@ -88,6 +88,7 @@ void BarrelPerceptor::pointCloudCallback(
 	// local vars
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZ>());
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downsampled(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_detection(new pcl::PointCloud<pcl::PointXYZ>());
 	Eigen::Isometry3d T_O_C; // object wrt the camera (Check if better Affine3d ??)
@@ -106,8 +107,11 @@ void BarrelPerceptor::pointCloudCallback(
 	//point_cloud_publisher__.publish(cloud_filtered);
 	//return;
 
+	// downsampling
+	detector__.voxelDownsampling(cloud_crop, cloud_downsampled);
+
 	// detect barrel
-	detector__.detect(0.5, cloud_crop, cloud_detection, T_O_C, confidence_level, vizbose__);
+	detector__.detect(0.5, cloud_downsampled, cloud_detection, T_O_C, confidence_level, vizbose__);
 	//detector__.detect(0.5, cloud_filtered, cloud_detection, T_O_C, confidence_level, vizbose__);
 
 	// fill ROS message & publish
@@ -154,10 +158,10 @@ void BarrelPerceptor::publishMarkers(
 	marker_msg.scale.x = 1.0;
 	marker_msg.scale.y = 1.0;
 	marker_msg.scale.z = 1.0;
-	marker_msg.color.a = 0.8; // Don't forget to set the alpha!
-	marker_msg.color.r = 0.8;
-	marker_msg.color.g = 0.8;
-	marker_msg.color.b = 0.8;
+	marker_msg.color.a = 0.6; // Don't forget to set the alpha!
+	marker_msg.color.r = 1.0;
+	marker_msg.color.g = 1.0;
+	marker_msg.color.b = 0.0;
 	viz_markers_publisher__.publish(marker_msg);
 }
 

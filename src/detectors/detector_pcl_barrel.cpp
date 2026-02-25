@@ -55,16 +55,16 @@ bool DetectorPclBarrel::detect(
     ne.setKSearch(50); // uses N neighbors to compute normals
     ne.compute(*normals);
 
-    // --- Cylinder segmentation ---
+    // Cylinder segmentation
     pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> seg;
 	pcl::PointIndices::Ptr inliers(new pcl::PointIndices); // indice of inlier points
 	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-    seg.setOptimizeCoefficients(true);
+    seg.setOptimizeCoefficients(false);
     seg.setModelType(pcl::SACMODEL_CYLINDER);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setNormalDistanceWeight(0.05);
-    seg.setMaxIterations(10000);
-    seg.setDistanceThreshold(0.03);
+    seg.setNormalDistanceWeight(0.1);
+    seg.setMaxIterations(1000);
+    seg.setDistanceThreshold(0.04); // distance to the model to be an inlier
     seg.setRadiusLimits(__param*0.98, __param*1.02);
     seg.setInputCloud(__cloud_in);
     seg.setInputNormals(normals);

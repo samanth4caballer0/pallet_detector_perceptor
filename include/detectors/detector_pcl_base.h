@@ -24,6 +24,7 @@
 #include <pcl/kdtree/kdtree.h> // kd tree for clustering
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/pca.h>
+#include <pcl/filters/voxel_grid.h>
 
 // namespace
 namespace Detectors
@@ -59,6 +60,11 @@ class DetectorPclBase
 			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out,
 		 	bool __negative = false);
+
+		// downsample cloud with voxelization
+		void voxelDownsampling(
+			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
+			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out);
 
 		// Applies statistocal outlier removal to clean a cloud
 		virtual void removeOutliers(
