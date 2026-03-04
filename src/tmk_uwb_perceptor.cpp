@@ -53,7 +53,7 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 
 	// transform each tmk_uwb measurement from sensor frame to robot frame
 	geometry_msgs::Pose sensor_pose;
-	sensor_pose.position.x = __msg.range*std::cos(-__msg.elevation);
+	sensor_pose.position.x = __msg.range*std::cos(__msg.elevation);
 	sensor_pose.position.y = __msg.range*std::sin(__msg.elevation);
 	sensor_pose.orientation.z = std::sin((M_PI + __msg.elevation - __msg.counterpart_elevation) /2.0);
 	sensor_pose.orientation.w = std::cos((M_PI + __msg.elevation - __msg.counterpart_elevation) /2.0);
