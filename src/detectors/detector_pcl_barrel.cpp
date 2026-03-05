@@ -81,19 +81,19 @@ bool DetectorPclBarrel::detect(
     extract.filter(*__cloud_out);
 
     // compute cylinder pose. Model coefficients: [0-2]: point on axis, [3-5]: axis direction
-    Eigen::Vector3d axis_point(coefficients->values[0], 0, coefficients->values[2]);
-	Eigen::Vector3d z_axis = -axis_point; // x of the cylinder always pointing to the camera
-	z_axis.normalize();
-    Eigen::Vector3d y_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
-    y_axis.normalize();
-    Eigen::Vector3d x_axis = y_axis.cross(z_axis);
+    Eigen::Vector3d axis_point(coefficients->values[0], 0, coefficients->values[2]); //point at camera height (y=0)
+	Eigen::Vector3d x_axis = -axis_point; // x of the cylinder always pointing to the camera
+	x_axis.normalize();
+    Eigen::Vector3d z_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
+    z_axis.normalize();
+    Eigen::Vector3d y_axis = z_axis.cross(x_axis);
     __T_O_C.linear().block<3,1>(0,0) = x_axis;
     __T_O_C.linear().block<3,1>(0,1) = y_axis;
     __T_O_C.linear().block<3,1>(0,2) = z_axis;
     __T_O_C.translation() = axis_point;
 
-	std::cout << __LINE__ << std::endl;
-	std::cout << std::endl << __T_O_C.matrix() << std::endl;
+	// debugging
+	//std::cout << std::endl << __T_O_C.matrix() << std::endl;
 
 	__confidence_level =  1.0; // not used yet
     return true;

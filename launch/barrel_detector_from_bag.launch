@@ -12,31 +12,45 @@
 		type="play"
 		name="rosbag_play"
 		output="screen"
-		args="--clock -r 1 -s 0 /home/beta/datasets/electrojet/2026-02-09-13-32-57.bag" >
+		args="--clock -r 0.25 -s 0 /home/beta/datasets/electrojet/2026-02-09-13-32-57.bag" >
 	</node>
 
-  	<!-- BMCL Localization in debug namespace-->
+  	<!-- debug namespace-->
   	<group ns="debug/perception">
 
+		<!-- barrel detector & tracker-->
 		<rosparam file="$(find target_detector)/config/barrel_detector.yaml" command="load"/>
-		<param name="/use_sim_time" type="bool" value="true" />
-		<group ns="barrel_detector">
+		<rosparam file="$(find target_tracker)/config/trackers.yaml" command="load"/>
+		<group ns="barrels">
 			<node
 				pkg="target_detector"
 				type="barrel_perceptor"
 				name="barrel_perceptor"
 				output="screen" >
 				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf_filtered"/>
+		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
 				<remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+				<param name="/use_sim_time" type="bool" value="true" />
+			</node>
+			<node
+				pkg="target_tracker"
+				type="target_tracker"
+				name="target_tracker"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+				<remap from="odom" to="/$(arg robot_id)/odom"/>
+				<remap from="detections" to="/debug/perception/barrels/detections"/>
+				<param name="/use_sim_time" type="bool" value="true" />
 			</node>
 		</group>
+
 	</group>
 
 	<!-- rviz-->
 	<group if="$(arg enable_rviz)">
-		<remap from="/tf" to="/$(arg robot_id)/tf"/>
 		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
 		<param name="/use_sim_time" type="bool" value="true" />
 		<node
 			name="rviz"

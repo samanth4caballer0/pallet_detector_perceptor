@@ -3,9 +3,12 @@
 
 //ROS dependencies
 #include <ros/ros.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf/transform_broadcaster.h>
 #include <pcl_ros/point_cloud.h> //PCL-ROS interoperability
 #include <pcl_conversions/pcl_conversions.h> //conversions from/to PCL/ROS
-#include <tf/transform_broadcaster.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Pose.h>
 #include <visualization_msgs/Marker.h>
@@ -33,14 +36,18 @@ class BarrelPerceptor
 		ros::Publisher viz_markers_publisher__; // debugging and vizualizaton purposes
 		ros::ServiceServer enable_server__;
 
+		// tf
+		tf2_ros::Buffer tf_buffer__;
+		tf2_ros::TransformListener tf_listener__;
+		std::map<std::string, Eigen::Isometry3d> T_platform_to_sensor__; // transforms from platform to sensor (sensor wrt the platform) paired with sensor frame id
+
 		// custom detector
 		Detectors::DetectorPclBarrel detector__;
 
 		// node configs and management
 		bool enabled__;
+		bool verbose__;
 		bool vizbose__; // enable visualization flag
-		bool enable_tf__; // enable tf broadcast
-		std::string cloud_in_topic_name__; // name for the point cloud input topic
 
     public:
         //constructor
@@ -64,6 +71,9 @@ class BarrelPerceptor
 
 		// publish rviz markers
 		void publishMarkers(const target_detector::Detections & __detections_msg);
+
+		// gets static transforms. Sets T_platform_to_sensor__
+		bool getStaticTransform(const std::string & __sensor_frame_id);
 
 }; //end of class
 
