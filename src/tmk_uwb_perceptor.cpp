@@ -51,7 +51,8 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 	detections.header.frame_id = robot_frame__;
 	detections.source_name = "tmk_uwb_" + std::to_string(__msg.anchor_id);
 
-	// transform each tmk_uwb measurement from sensor frame to robot frame
+	// Transform each tmk_uwb measurement from sensor frame to robot frame
+	// Assumes radio beacons both onboard and landmarks mounted with z axis pointing down, so invert the sign at azimuth and cp_azimuth
 	geometry_msgs::Pose sensor_pose;
 	sensor_pose.position.x = __msg.range*std::cos(-__msg.azimuth);
 	sensor_pose.position.y = __msg.range*std::sin(-__msg.azimuth);
