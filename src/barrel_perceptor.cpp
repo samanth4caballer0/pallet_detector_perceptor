@@ -109,7 +109,7 @@ void BarrelPerceptor::pointCloudCallback(
 	pcl::fromROSMsg (*__cloud_in, *cloud_in);
 
 	// Crop to ROI
-	Eigen::Vector4f crop_max(1.0,  1.0, 3.0, 1.0);
+	Eigen::Vector4f crop_max(1.0, 1.0, 3.0, 1.0);
 	Eigen::Vector4f crop_min(-1.0, 0.2, 0.5, 1.0);
 	detector__.crop(crop_max, crop_min, cloud_in, cloud_crop);
 	//point_cloud_publisher__.publish(cloud_crop);
@@ -121,7 +121,7 @@ void BarrelPerceptor::pointCloudCallback(
 	//return;
 
 	// downsampling
-	detector__.voxelDownsampling(cloud_crop, cloud_downsampled);
+	detector__.voxelDownsampling(Eigen::Vector3f(0.02f,0.02f,0.02f), cloud_crop, cloud_downsampled);
 
 	// detect barrel
 	detector__.detect(0.5, cloud_downsampled, cloud_detection, T_O_C, confidence_level, vizbose__);

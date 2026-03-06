@@ -12,7 +12,7 @@
 		type="play"
 		name="rosbag_play"
 		output="screen"
-		args="--clock -r 0.25 -s 0 /home/beta/datasets/electrojet/2026-02-09-13-32-57.bag" >
+		args="--clock -r 1 -s 0 /home/beta/datasets/electrojet/2026-02-09-13-32-57.bag" >
 	</node>
 
   	<!-- debug namespace-->

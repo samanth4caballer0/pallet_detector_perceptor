@@ -63,6 +63,7 @@ class DetectorPclBase
 
 		// downsample cloud with voxelization
 		void voxelDownsampling(
+			const Eigen::Vector3f & __voxel_size,
 			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out);
 

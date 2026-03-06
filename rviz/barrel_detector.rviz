@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Grid1/Offset1
-        - /Barrel1
         - /TF1/Frames1
       Splitter Ratio: 0.8067227005958557
     Tree Height: 692
@@ -55,10 +54,10 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/Axes
       Enabled: true
-      Length: 0.4000000059604645
+      Length: 0.30000001192092896
       Name: Platform
-      Radius: 0.03999999910593033
-      Reference Frame: <Fixed Frame>
+      Radius: 0.019999999552965164
+      Reference Frame: platform
       Show Trail: false
       Value: true
     - Alpha: 1
@@ -83,7 +82,7 @@ Visualization Manager:
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 4.0426225662231445
-        Min Value: -1.0475847721099854
+        Min Value: -1.1725478172302246
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -144,22 +143,6 @@ Visualization Manager:
         barrel_arrow: true
       Queue Size: 100
       Value: true
-    - Alpha: 1
-      Axes Length: 1
-      Axes Radius: 0.10000000149011612
-      Class: rviz/Pose
-      Color: 255; 25; 0
-      Enabled: false
-      Head Length: 0.30000001192092896
-      Head Radius: 0.10000000149011612
-      Name: Object Pose
-      Queue Size: 10
-      Shaft Length: 1
-      Shaft Radius: 0.05000000074505806
-      Shape: Arrow
-      Topic: /debug/perception/barrels/track/pose
-      Unreliable: false
-      Value: false
     - Class: rviz/TF
       Enabled: false
       Filter (blacklist): ""
@@ -181,7 +164,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: platform
+    Fixed Frame: barrel
     Frame Rate: 30
   Name: root
   Tools:
@@ -214,10 +197,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 272.9413146972656
+      Scale: 341.45147705078125
       Target Frame: <Fixed Frame>
-      X: -1.5797781944274902
-      Y: -0.09020954370498657
+      X: 1.3277071714401245
+      Y: 0.055330000817775726
     Saved: ~
 Window Geometry:
   Displays:
