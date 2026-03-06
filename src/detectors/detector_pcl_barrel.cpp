@@ -84,8 +84,11 @@ bool DetectorPclBarrel::detect(
     Eigen::Vector3d axis_point(coefficients->values[0], 0, coefficients->values[2]); //point at camera height (y=0)
 	Eigen::Vector3d x_axis = -axis_point; // x of the cylinder always pointing to the camera
 	x_axis.normalize();
-    Eigen::Vector3d z_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
-    z_axis.normalize();
+    //Eigen::Vector3d z_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
+	//if ( z_axis.y() > 0 ) z_axis = -z_axis; // forces z axis of the barrel always pointing to the -Y hemisphere of the camera (meaninig usually Z barrel pointing up)
+	//std::cout << "z_axis: " << z_axis.transpose() << std::endl;
+	//z_axis.normalize();
+	Eigen::Vector3d z_axis(0,-1,0); // forces gravity constraint, assumes camera Y pointing down
     Eigen::Vector3d y_axis = z_axis.cross(x_axis);
     __T_O_C.linear().block<3,1>(0,0) = x_axis;
     __T_O_C.linear().block<3,1>(0,1) = y_axis;

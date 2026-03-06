@@ -135,7 +135,7 @@ void BarrelPerceptor::pointCloudCallback(
 	target_detector::Detections detections_msg;
 	Eigen::Quaterniond qt;
 	detections_msg.header = __cloud_in->header;
-	detections_msg.header.frame_id = "platform";
+	detections_msg.header.frame_id = "platform"; // wrt to the platform
 	detections_msg.source_name = "camera";
 	detections_msg.detections.resize(1);
 	detections_msg.detections[0].type = target_detector::Detection::BARREL;
@@ -153,7 +153,7 @@ void BarrelPerceptor::pointCloudCallback(
 	detections_publisher__.publish(detections_msg);
 
 	// fill ROS message & publish wrt to the sensor
-	detections_msg.header = __cloud_in->header;
+	detections_msg.header = __cloud_in->header; // keep frame_id , wrt to the camera
 	detections_msg.source_name = "camera";
 	detections_msg.detections.resize(1);
 	detections_msg.detections[0].type = target_detector::Detection::BARREL;
@@ -214,10 +214,10 @@ void BarrelPerceptor::publishMarkers(
 	marker_msg.pose.orientation.x = __detections_msg.detections[0].pose.pose.orientation.x;
 	marker_msg.pose.orientation.y = __detections_msg.detections[0].pose.pose.orientation.y;
 	marker_msg.pose.orientation.z = __detections_msg.detections[0].pose.pose.orientation.z;
-	marker_msg.pose.orientation.w = __detections_msg.detections[0].pose.pose.orientation.x;
+	marker_msg.pose.orientation.w = __detections_msg.detections[0].pose.pose.orientation.w;
 	marker_msg.scale.x = 1.0;
-	marker_msg.scale.y = 0.05;
-	marker_msg.scale.z = 0.05;
+	marker_msg.scale.y = 0.03;
+	marker_msg.scale.z = 0.03;
 	marker_msg.color.a = 0.8; // Don't forget to set the alpha!
 	marker_msg.color.r = 1.0;
 	marker_msg.color.g = 1.0;

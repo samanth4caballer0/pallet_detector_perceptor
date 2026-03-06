@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Grid1/Offset1
+        - /Barrel1
         - /TF1/Frames1
       Splitter Ratio: 0.8067227005958557
     Tree Height: 692
@@ -34,7 +35,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 0.10000000149011612
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -48,7 +49,7 @@ Visualization Manager:
         Y: 1
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
       Value: true
     - Alpha: 1
@@ -74,7 +75,7 @@ Visualization Manager:
       Enabled: true
       Length: 0.699999988079071
       Name: Barrel
-      Radius: 0.03999999910593033
+      Radius: 0.019999999552965164
       Reference Frame: barrel
       Show Trail: false
       Value: true
@@ -82,7 +83,7 @@ Visualization Manager:
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 4.0426225662231445
-        Min Value: -0.9502896666526794
+        Min Value: -1.0475847721099854
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -140,6 +141,7 @@ Visualization Manager:
       Name: Marker
       Namespaces:
         barrel: true
+        barrel_arrow: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -202,7 +204,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 3.145003318786621
+      Angle: 3.135002374649048
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -212,10 +214,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 236.50238037109375
+      Scale: 272.9413146972656
       Target Frame: <Fixed Frame>
-      X: -1.5547696352005005
-      Y: 0.3807593286037445
+      X: -1.5797781944274902
+      Y: -0.09020954370498657
     Saved: ~
 Window Geometry:
   Displays:
