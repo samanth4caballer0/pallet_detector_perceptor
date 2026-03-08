@@ -7,6 +7,9 @@ float64 baseline
 # for TYPE_ALVAR, id of the tag, or id of the master tag in bundles, use -1 for all
 int32 alvar_marker_id
 
+# for type TYPE_BARREL, radius of the barrel [m]
+float64 radius
+
 ---
 
 bool success
