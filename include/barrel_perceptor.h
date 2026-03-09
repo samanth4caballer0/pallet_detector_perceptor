@@ -48,6 +48,7 @@ class BarrelPerceptor
 		bool enabled__;
 		bool verbose__;
 		bool vizbose__; // enable visualization flag
+		double diameter__; // target diameter of the barrel, [m]
 
     public:
         //constructor

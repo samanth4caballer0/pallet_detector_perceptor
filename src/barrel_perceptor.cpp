@@ -39,9 +39,9 @@ bool BarrelPerceptor::init()
 		return false;
 	}
 
-	// Enabled by default (ONly for devel & debugging. )
-	point_cloud_subscriber__ = nh__.subscribe("point_cloud_in", 1, &BarrelPerceptor::pointCloudCallback, this);
-	enabled__ = true;
+	// Enabled by default (Only for devel & debugging. )
+	//point_cloud_subscriber__ = nh__.subscribe("point_cloud_in", 1, &BarrelPerceptor::pointCloudCallback, this);
+	//enabled__ = true;
 
 	// return
 	return true;
@@ -51,6 +51,10 @@ bool BarrelPerceptor::enableServiceCallback(
 	target_detector::DetectorEnable::Request & __request,
 	target_detector::DetectorEnable::Response & __response)
 {
+	// we update diameter, even if already enabled
+	if ( __request.enable )
+		diameter__ = __request.diameter;
+
 	// enable
 	if ( !enabled__ && __request.enable )
 	{
@@ -124,7 +128,7 @@ void BarrelPerceptor::pointCloudCallback(
 	detector__.voxelDownsampling(Eigen::Vector3f(0.02f,0.02f,0.02f), cloud_crop, cloud_downsampled);
 
 	// detect barrel
-	detector__.detect(0.5, cloud_downsampled, cloud_detection, T_O_C, confidence_level, vizbose__);
+	detector__.detect(0.5*diameter__, cloud_downsampled, cloud_detection, T_O_C, confidence_level, vizbose__);
 	//detector__.detect(0.5, cloud_filtered, cloud_detection, T_O_C, confidence_level, vizbose__);
 
 
