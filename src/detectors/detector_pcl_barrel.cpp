@@ -86,8 +86,11 @@ bool DetectorPclBarrel::detect(
 	//check AABB (axis aligned bounding box)
 	pcl::PointXYZ min_pt, max_pt;
 	pcl::getMinMax3D(*__cloud_out, min_pt, max_pt);
-	std::cout << "Min point: " << min_pt.x << ", " << min_pt.y << ", " << min_pt.z << std::endl;
-	std::cout << "Max point: " << max_pt.x << ", " << max_pt.y << ", " << max_pt.z << std::endl;
+	//std::cout << "Min point: " << min_pt.x << ", " << min_pt.y << ", " << min_pt.z << std::endl;
+	//std::cout << "Max point: " << max_pt.x << ", " << max_pt.y << ", " << max_pt.z << std::endl;
+	double diameter = __param*2;
+	double dx = max_pt.x - min_pt.x; // distance between min and max in the x dimension (horizontal)
+	if ( ( dx < 0.8*diameter ) || ( dx > 1.1*diameter ) ) return false;
 
     // compute cylinder pose. Model coefficients: [0-2]: point on axis, [3-5]: axis direction
     Eigen::Vector3d axis_point(coefficients->values[0], 0, coefficients->values[2]); //point at camera height (y=0)
