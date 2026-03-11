@@ -113,8 +113,8 @@ void BarrelPerceptor::pointCloudCallback(
 	pcl::fromROSMsg (*__cloud_in, *cloud_in);
 
 	// Crop to ROI
-	Eigen::Vector4f crop_max(1.0, 1.0, 3.0, 1.0);
-	Eigen::Vector4f crop_min(-1.0, 0.2, 0.5, 1.0);
+	Eigen::Vector4f crop_max(1.25, 1.0, 4.0, 1.0);
+	Eigen::Vector4f crop_min(-1.25, 0.2, 0.5, 1.0);
 	detector__.crop(crop_max, crop_min, cloud_in, cloud_crop);
 	//point_cloud_publisher__.publish(cloud_crop);
 	//return;
