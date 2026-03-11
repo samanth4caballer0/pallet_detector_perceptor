@@ -1,5 +1,5 @@
-#ifndef DETECTORS__DETECTOR_PCL_BARREL_H
-#define DETECTORS__DETECTOR_PCL_BARREL_H
+#ifndef DETECTORS__VERTICAL_CYLINDER_DETECTOR_H
+#define DETECTORS__VERTICAL_CYLINDER_DETECTOR_H
 
 // pcl
 #include <pcl/point_cloud.h>
@@ -14,12 +14,12 @@
 #include <eigen3/Eigen/Geometry>
 
 // this library
-#include "detectors/detector_pcl_base.h"
+#include "detectors/pcl_base_detector.h"
 
 namespace Detectors
 {
 
-class DetectorPclBarrel : public DetectorPclBase
+class VerticalCylinderDetector : public PclBaseDetector
 {
 	protected:
 		//double param__;
@@ -27,17 +27,17 @@ class DetectorPclBarrel : public DetectorPclBase
 	public:
 
 		// Constructor
-	    DetectorPclBarrel();
+	    VerticalCylinderDetector();
 
 		// Destructor
-	    ~DetectorPclBarrel();
+	    ~VerticalCylinderDetector();
 
 	    // Initialize detector with known cylinder radius
 	    //virtual bool init(const std::map<std::string, double> & __params);
 		virtual bool init();
 
-	    // Detect barrel and output inlier points + pose
-        virtual bool detect(
+			// Detect vertical cylinder and output inlier points + pose
+			virtual bool detect(
 			const double & __param,
 			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out,

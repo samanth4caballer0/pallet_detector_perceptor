@@ -18,14 +18,14 @@
   	<!-- debug namespace-->
   	<group ns="debug/perception">
 
-		<!-- barrel detector & tracker-->
-		<rosparam file="$(find target_detector)/config/barrel_detector.yaml" command="load"/>
+			<!-- vertical cylinder detector & tracker-->
+			<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
 		<rosparam file="$(find target_tracker)/config/trackers.yaml" command="load"/>
-		<group ns="barrels">
+		<group ns="vertical_cylinders">
 			<node
 				pkg="target_detector"
-				type="barrel_perceptor"
-				name="barrel_perceptor"
+				type="vertical_cylinder_perceptor"
+				name="vertical_cylinder_perceptor"
 				output="screen" >
 				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
 		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
@@ -40,7 +40,7 @@
 				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
 		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
 				<remap from="odom" to="/$(arg robot_id)/odom"/>
-				<remap from="detections" to="/debug/perception/barrels/detections"/>
+				<remap from="detections" to="/debug/perception/vertical_cylinders/detections"/>
 				<param name="/use_sim_time" type="bool" value="true" />
 			</node>
 		</group>
@@ -56,7 +56,7 @@
 			name="rviz"
 			pkg="rviz"
 			type="rviz"
-			args="-d $(find target_detector)/rviz/barrel_detector.rviz">
+			args="-d $(find target_detector)/rviz/vertical_cylinder_detector.rviz">
 		</node>
 	</group>
 

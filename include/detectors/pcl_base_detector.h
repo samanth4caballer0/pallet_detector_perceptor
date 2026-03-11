@@ -1,5 +1,5 @@
-#ifndef detector_detector_pcl_base_H
-#define detector_detector_pcl_base_H
+#ifndef DETECTORS__PCL_BASE_DETECTOR_H
+#define DETECTORS__PCL_BASE_DETECTOR_H
 
 //std C++
 #include <iostream>
@@ -31,14 +31,14 @@ namespace Detectors
 {
 
 // Base class for all detectors
-class DetectorPclBase
+class PclBaseDetector
 {
 	public:
         // Constructor
-        DetectorPclBase();
+        PclBaseDetector();
 
         // Destructor
-		~DetectorPclBase();
+		~PclBaseDetector();
 
 		// initializations
 		//virtual bool init(const std::map<std::string, double> & __params) = 0;

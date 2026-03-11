@@ -1,20 +1,20 @@
-#include "detectors/detector_pcl_base.h"
+#include "detectors/pcl_base_detector.h"
 
 // namespace
 namespace Detectors
 {
 
-DetectorPclBase::DetectorPclBase()
+PclBaseDetector::PclBaseDetector()
 {
 	//
 }
 
-DetectorPclBase::~DetectorPclBase()
+PclBaseDetector::~PclBaseDetector()
 {
 	//
 }
 
-void DetectorPclBase::crop(
+void PclBaseDetector::crop(
 	const Eigen::Vector4f & __max_values,
 	const Eigen::Vector4f & __min_values,
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
@@ -29,7 +29,7 @@ void DetectorPclBase::crop(
 	box_filter.filter(*__cloud_out);
 }
 
-void DetectorPclBase::voxelDownsampling(
+void PclBaseDetector::voxelDownsampling(
 	const Eigen::Vector3f & __voxel_size,
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)
@@ -40,7 +40,7 @@ void DetectorPclBase::voxelDownsampling(
     voxel_grid.filter(*__cloud_out);
 }
 
-void DetectorPclBase::removeOutliers(
+void PclBaseDetector::removeOutliers(
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)
 {
@@ -51,7 +51,7 @@ void DetectorPclBase::removeOutliers(
 	outlier_filter.filter(*__cloud_out);
 }
 
-void DetectorPclBase::computeNormals(
+void PclBaseDetector::computeNormals(
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 	pcl::PointCloud<pcl::Normal>::Ptr __cloud_out)
 {
@@ -64,7 +64,7 @@ void DetectorPclBase::computeNormals(
 	normal_computer.compute(*__cloud_out);
 }
 
-unsigned int DetectorPclBase::correlation(
+unsigned int PclBaseDetector::correlation(
 	const std::vector<double> & __data,
 	const std::vector<double> & __kernel)
 {
@@ -98,7 +98,7 @@ unsigned int DetectorPclBase::correlation(
 	return best_ii;
 }
 
-bool DetectorPclBase::saveOnDisk(
+bool PclBaseDetector::saveOnDisk(
 	const std::string & __file_name,
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in)
 {
@@ -106,7 +106,7 @@ bool DetectorPclBase::saveOnDisk(
 	return true;
 }
 
-bool DetectorPclBase::loadFromDisk(
+bool PclBaseDetector::loadFromDisk(
 	const std::string & __file_name,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)
 {

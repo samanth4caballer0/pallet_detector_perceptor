@@ -73,9 +73,9 @@ Visualization Manager:
       Class: rviz/Axes
       Enabled: true
       Length: 0.699999988079071
-      Name: Barrel
+      Name: VerticalCylinder
       Radius: 0.019999999552965164
-      Reference Frame: barrel
+      Reference Frame: vertical_cylinder
       Show Trail: false
       Value: true
     - Alpha: 1
@@ -129,18 +129,18 @@ Visualization Manager:
       Size (Pixels): 1
       Size (m): 0.009999999776482582
       Style: Points
-      Topic: /debug/perception/barrels/cloud_out
+      Topic: /debug/perception/vertical_cylinders/cloud_out
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /debug/perception/barrels/visuals
+      Marker Topic: /debug/perception/vertical_cylinders/visuals
       Name: Marker
       Namespaces:
-        barrel: true
-        barrel_arrow: true
+        vertical_cylinders: true
+        vertical_cylinders_arrow: true
       Queue Size: 100
       Value: true
     - Class: rviz/TF
@@ -164,7 +164,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: barrel
+    Fixed Frame: vertical_cylinder
     Frame Rate: 30
   Name: root
   Tools:

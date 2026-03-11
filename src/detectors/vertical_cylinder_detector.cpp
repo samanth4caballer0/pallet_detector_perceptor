@@ -1,25 +1,26 @@
-#include "detectors/detector_pcl_barrel.h"
+#include "detectors/vertical_cylinder_detector.h"
+#include <cmath>
 
 namespace Detectors
 {
 
-DetectorPclBarrel::DetectorPclBarrel()
+VerticalCylinderDetector::VerticalCylinderDetector()
 {
 	//
 }
 
-DetectorPclBarrel::~DetectorPclBarrel()
+VerticalCylinderDetector::~VerticalCylinderDetector()
 {
 	//
 }
 
-//bool DetectorPclBarrel::init(const std::map<std::string, double> & __params)
-bool DetectorPclBarrel::init()
+//bool VerticalCylinderDetector::init(const std::map<std::string, double> & __params)
+bool VerticalCylinderDetector::init()
 {
 	// check if param radius is in the map
 	/*if ( !__params.find("radius") )
 	{
-		std::cout << "DetectorPclBarrel::init(): required radius param not set. Exit." << std::endl;
+		std::cout << "VerticalCylinderDetector::init(): required radius param not set. Exit." << std::endl;
 		return false;
 	}
 
@@ -27,7 +28,7 @@ bool DetectorPclBarrel::init()
 	radius__ = __params["radius"];
 	if ( radius__ < 0.1 ) || ( radius__ > 2.0 )
 	{
-		std::cout << "DetectorPclBarrel::init(): radius should be in [0.1 , 2.0] m. Exit." << std::endl;
+		std::cout << "VerticalCylinderDetector::init(): radius should be in [0.1 , 2.0] m. Exit." << std::endl;
 		return false;
 	}*/
 
@@ -35,7 +36,7 @@ bool DetectorPclBarrel::init()
     return true;
 }
 
-bool DetectorPclBarrel::detect(
+bool VerticalCylinderDetector::detect(
 	const double & __param,
 	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out,
@@ -44,6 +45,7 @@ bool DetectorPclBarrel::detect(
 	const bool & __vizbose)
 {
 	// basic checks
+	if ( !std::isfinite(__param) || __param <= 0.0 ) return false;
     if ( __cloud_in->empty() ) return false;
 
     // estimate normals
@@ -97,7 +99,7 @@ bool DetectorPclBarrel::detect(
 	Eigen::Vector3d x_axis = -axis_point; // x of the cylinder always pointing to the camera
 	x_axis.normalize();
     //Eigen::Vector3d z_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
-	//if ( z_axis.y() > 0 ) z_axis = -z_axis; // forces z axis of the barrel always pointing to the -Y hemisphere of the camera (meaninig usually Z barrel pointing up)
+	//if ( z_axis.y() > 0 ) z_axis = -z_axis; // forces z axis of the vertical cylinder always pointing to the -Y hemisphere of the camera (meaninig usually Z cylinder pointing up)
 	//std::cout << "z_axis: " << z_axis.transpose() << std::endl;
 	//z_axis.normalize();
 	Eigen::Vector3d z_axis(0,-1,0); // forces gravity constraint, assumes camera Y pointing down

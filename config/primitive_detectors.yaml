@@ -33,3 +33,15 @@ beacons:
   enabled_by_default: true
   vizbose: true
   robot_frame: "platform"
+
+vertical_cylinders:
+  type: vertical_cylinder
+  enabled_by_default: false
+  vizbose: true
+  robot_frame: "platform"
+  source_name: "camera"
+  diameter: 1.0
+  min_cloud_points: 1000
+  crop_min: [-1.25, 0.2, 0.5]
+  crop_max: [1.25, 1.0, 4.0]
+  voxel_size: [0.02, 0.02, 0.02]

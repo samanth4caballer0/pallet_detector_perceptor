@@ -66,12 +66,12 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 )
 
-add_library(detectors
-	src/detectors/reflector_detector.cpp
-	src/detectors/cluster.cpp
-	src/detectors/detector_pcl_base.cpp
-	src/detectors/detector_pcl_barrel.cpp
-)
+	add_library(detectors
+		src/detectors/reflector_detector.cpp
+		src/detectors/cluster.cpp
+		src/detectors/pcl_base_detector.cpp
+		src/detectors/vertical_cylinder_detector.cpp
+	)
 #add_dependencies(detectors
 #	${catkin_EXPORTED_TARGETS}
 #	${target_detector_EXPORTED_TARGETS}
@@ -131,16 +131,16 @@ target_link_libraries(tmk_uwb_perceptor
 	${catkin_LIBRARIES}
 )
 
-add_executable(barrel_perceptor
-	src/barrel_perceptor_main.cpp
-	src/barrel_perceptor.cpp
+add_executable(vertical_cylinder_perceptor
+	src/vertical_cylinder_perceptor_main.cpp
+	src/vertical_cylinder_perceptor.cpp
 )
-add_dependencies(barrel_perceptor
+add_dependencies(vertical_cylinder_perceptor
 	detectors
 	${target_detector_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
-target_link_libraries(barrel_perceptor
+target_link_libraries(vertical_cylinder_perceptor
 	detectors
 	${catkin_LIBRARIES}
 )
@@ -152,7 +152,7 @@ install(
 		baseline_pair_perceptor
 		alvar_perceptor
 		tmk_uwb_perceptor
-		barrel_perceptor
+		vertical_cylinder_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
