@@ -189,6 +189,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	detections_msg.detections[0].pose.pose.orientation.z = qt.z();
 	detections_msg.detections[0].pose.pose.orientation.w = qt.w();
 	detections_msg.detections[0].intensity = 0.0;
+	detections_msg.detections[0].radius = 0.5 * diameter__;
 	detections_msg.detections[0].supports = cloud_detection->size();
 	detections_publisher__.publish(detections_msg);
 

@@ -25,3 +25,6 @@ geometry_msgs/Point[] points
 
 # baseline for reflector pair detector
 float64 baseline
+
+# radius for cylinder-like detections, 0.0 if not applicable
+float64 radius
