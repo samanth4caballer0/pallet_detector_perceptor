@@ -1,5 +1,5 @@
-#ifndef TARGET_DETECTOR__ALVAR_PERCEPTOR_H
-#define TARGET_DETECTOR__ALVAR_PERCEPTOR_H
+#ifndef TARGET_DETECTOR__TMK_UWB_PERCEPTOR_H
+#define TARGET_DETECTOR__TMK_UWB_PERCEPTOR_H
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
@@ -8,10 +8,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <visualization_msgs/Marker.h>
-#include <std_msgs/Bool.h>
 
 #include <tmk_uwb/UwbMeasurement.h>
 
@@ -41,8 +38,6 @@ class TmkUwbPerceptor
 		visualization_msgs::Marker marker__;
 
 		std::string robot_frame__;
-
-		ros::Publisher enable_bundle_detection_publisher__;
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;

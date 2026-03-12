@@ -6,6 +6,7 @@ We can launch detections of two types:
 - Primitive detections: those arising from a sensor source. Available now:
     - Reflectors from lidar intensity
 	- Alvar bundles (we do not detect single alvars for now, so the simplest alvar detection is a bundle)
+	- TMK UWB measurements
 
 - Composite detections: patterns of detections (patterns of primitive detections in general, but could be of composite detections as well). Available now:
     - Baseline pair: finds detections that are separated a given baseline. Example: docking reflector pairs.
@@ -57,6 +58,7 @@ For yaml files, the available types now are:
 - Primitive:
     - reflector 
     - alvar
+	- tmk_uwb
 - Composite:
     - baseline_pair
 
@@ -64,6 +66,7 @@ So in the launch files, you can use the following corresponding node types:
 
 - reflector_perceptor
 - alvar_perceptor
+- tmk_uwb_perceptor
 - baseline_pair_perceptor
 
 The nodes are called perceptors because the detectors word is reserved for the c++ classes that actually contain the code that detects stuff.
@@ -88,6 +91,11 @@ Type reflector:
 - rate (double) -> detections publish rate
 
 Type alvar:
+- enabled_by_default (bool)
+- vizbose (bool)
+- robot_frame (string)
+
+Type tmk_uwb:
 - enabled_by_default (bool)
 - vizbose (bool)
 - robot_frame (string)

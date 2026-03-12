@@ -27,3 +27,9 @@ alvars:
   enabled_by_default: true # bundle processing by ar_track_alvar is enabled/disabled accordingly
   vizbose: true
   robot_frame: "platform"
+
+beacons:
+  type: tmk_uwb
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
