@@ -4,6 +4,7 @@ small_reflectors: # same as node namespace
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
+  scan_type: "sensor_msgs/LaserScan" # or "sick_safetyscanners/ExtendedLaserScanMsg"
   min_reflector_intensity: 250
   reflector_size: 0.04
   max_detection_range: 20
@@ -15,6 +16,7 @@ big_reflectors:
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
+  scan_type: "sensor_msgs/LaserScan" # or "sick_safetyscanners/ExtendedLaserScanMsg"
   min_reflector_intensity: 250
   reflector_size: 0.06
   max_detection_range: 50
