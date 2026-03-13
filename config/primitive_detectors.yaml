@@ -4,11 +4,11 @@ small_reflectors: # same as node namespace
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
-  scan_type: "sensor_msgs/LaserScan" # or "sick_safetyscanners/ExtendedLaserScanMsg"
-  min_reflector_intensity: 250
+  scan_type: "sensor_msgs/LaserScan" # "sensor_msgs/LaserScan" or "sick_safetyscanners/ExtendedLaserScanMsg"
+  min_reflector_intensity: 250 # only used for "sensor_msgs/LaserScan"
   reflector_size: 0.04
   max_detection_range: 20
-  scan_decimation: 5.0 # only every N-th scan is processed. Decimation = 3 -> process scan 1, skipp scans 2, 3, process scan 4, ...
+  scan_decimation: 5 # only every N-th scan is processed. Decimation = 3 -> process scan 1, skip scans 2 and 3, process scan 4, ...
 
 big_reflectors:
   type: reflector
@@ -16,11 +16,11 @@ big_reflectors:
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
-  scan_type: "sensor_msgs/LaserScan" # or "sick_safetyscanners/ExtendedLaserScanMsg"
-  min_reflector_intensity: 250
+  scan_type: "sensor_msgs/LaserScan" # "sensor_msgs/LaserScan" or "sick_safetyscanners/ExtendedLaserScanMsg"
+  min_reflector_intensity: 250 # only used for "sensor_msgs/LaserScan"
   reflector_size: 0.06
   max_detection_range: 50
-  scan_decimation: 5.0
+  scan_decimation: 5
 
 alvars:
   type: alvar

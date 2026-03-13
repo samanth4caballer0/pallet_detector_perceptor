@@ -45,7 +45,7 @@ class ReflectorPerceptor
 
 		std::string scan_type__;
 		double reflector_size__;
-		double min_reflector_intensity__;
+		double min_reflector_intensity__ = 0.0;
 		double max_detection_range__;
 		int decimation__;
 		std::string robot_frame__;
@@ -91,7 +91,10 @@ class ReflectorPerceptor
 
 		void initDetection()
 		{
-			detection__.type = target_detector::Detection::REFLECTOR_FROM_INTENSITY;
+			if ( scan_type__ == "sick_safetyscanners/ExtendedLaserScanMsg" )
+				detection__.type = target_detector::Detection::REFLECTOR_FROM_BOOL;
+			else
+				detection__.type = target_detector::Detection::REFLECTOR_FROM_INTENSITY;
 			detection__.id = -1;
 			detection__.pose.pose.position.z = 0.0;
 			detection__.pose.pose.orientation.x = 0.0;

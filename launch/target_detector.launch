@@ -3,23 +3,59 @@
 <launch>
 
 	<!-- Input arguments -->
-	<arg name="robot_id" default="sm_moontech_1" />
-	<arg name="namespace" default="target_detector" />
+	<arg name="robot_id" default="robot_1" />
+	<arg name="namespace" default="perception" />
 
-	<!-- Target detector -->
+	<!-- Primitive and composite detector parameters -->
 	<group ns="$(arg namespace)">
-		<rosparam file="$(find target_detector)/config/lidar_reflector.yaml" command="load"/>
-		<remap from="laser_input0" to="devices/lidar_front/extended_laser_scan"/>
-		<remap from="laser_input1" to="devices/lidar_back/extended_laser_scan"/>
-		<remap from="alvar" to="devices/lidar_back/extended_laser_scan"/>
-		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		<node
-			pkg="target_detector"
-			type="target_detector_node"
-			name="target_detector"
-			output="screen" >
-		</node>
+		<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
+		<rosparam file="$(find target_detector)/config/composite_detectors.yaml" command="load"/>
+
+		<group ns="small_reflectors">
+			<node
+				pkg="target_detector"
+				type="reflector_perceptor"
+				name="perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+				<remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
+				<remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
+			</node>
+		</group>
+
+		<group ns="big_reflectors">
+			<node
+				pkg="target_detector"
+				type="reflector_perceptor"
+				name="perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+				<remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
+				<remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
+			</node>
+		</group>
+
+		<group ns="docking_pairs">
+			<node
+				pkg="target_detector"
+				type="baseline_pair_perceptor"
+				name="perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+				<remap from="detections_in" to="/$(arg robot_id)/$(arg namespace)/small_reflectors/detections"/>
+			</node>
+		</group>
+
+		<group ns="beacons">
+			<node
+				pkg="target_detector"
+				type="tmk_uwb_perceptor"
+				name="perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+				<remap from="detections_in" to="/$(arg robot_id)/devices/beacons/uwb_measurements"/>
+			</node>
+		</group>
 	</group>
 
 </launch>
