@@ -24,7 +24,10 @@ find_package( catkin REQUIRED COMPONENTS
 	tmk_uwb
 	pcl_ros
 	pcl_conversions
+	tf2_eigen
 )
+
+find_package(Eigen3 REQUIRED)
 
 add_message_files(
 	DIRECTORY msg
@@ -59,11 +62,13 @@ catkin_package(
 		tmk_uwb
 		pcl_ros
 		pcl_conversions
+		tf2_eigen
 )
 
 include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIRS}
 )
 
 add_library(detectors

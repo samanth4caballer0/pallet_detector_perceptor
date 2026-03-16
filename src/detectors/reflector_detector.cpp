@@ -16,8 +16,7 @@ std::vector<ReflectorDetection> ReflectorDetector::detect(
 	const double & __angle_end,
 	const std::vector<float> & __ranges,
 	const std::vector<float> & __intensities,
-	const std::vector<uint8_t> & __reflector_hits, // empty if not used
-	const Eigen::Isometry2d & __T_platform_sensor)
+	const std::vector<uint8_t> & __reflector_hits) // empty if not used
 {
 	std::vector<ReflectorDetection> detections;
 
@@ -94,8 +93,8 @@ std::vector<ReflectorDetection> ReflectorDetector::detect(
 		// Only publish clusters with enough supports
 		if ( cluster.supports() >= min_support_points)
 		{
-			// transform to robot frame
-			cluster.transform(__T_platform_sensor);
+			// dont transform to robot frame HERE!
+			// cluster.transform(__T_platform_sensor);
 			detections.push_back(
 				ReflectorDetection(static_cast<double>(cluster.supports()), cluster.intensity(), cluster.centroid().x(), cluster.centroid().y()) );
 		}

@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <ros/ros.h>
 #include <tf2_ros/buffer.h>
@@ -55,7 +56,7 @@ class ReflectorPerceptor
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, Eigen::Isometry3d> T_robot_to_sensor__;
+		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot_tf__;
 		std::map<std::string, Eigen::Isometry2d> T_robot_to_sensor_2d__;
 
 	public:

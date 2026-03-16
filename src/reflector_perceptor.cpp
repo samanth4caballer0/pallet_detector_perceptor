@@ -95,14 +95,13 @@ void ReflectorPerceptor::processScan(
 		return;
 	}
 
-	// detect and generate detections
+	// detect and generate detections in SENSOR frame!
 	std::vector<Detectors::ReflectorDetection> detected_reflectors;
 
 	detected_reflectors = detector__->detect(
 		__angle_min, __angle_max,
 		__ranges, __intensities,
-		__reflector_hits,
-		T_robot_to_sensor_2d__[__header.frame_id]);
+		__reflector_hits);
 
 	// fill detections msg
 	detections__.header = __header;
@@ -112,10 +111,41 @@ void ReflectorPerceptor::processScan(
 
 	for (auto & detected_reflector : detected_reflectors)
 	{
-		detection__.pose.pose.position.x = detected_reflector.centroid_x;
-		detection__.pose.pose.position.y = detected_reflector.centroid_y;
-		detection__.pose.covariance[0] = detected_reflector.covariance_xx;
-		detection__.pose.covariance[7] = detected_reflector.covariance_yy;
+		// pose in sensor frame
+        geometry_msgs::Pose pose_in_sensor;
+        pose_in_sensor.position.x = detected_reflector.centroid_x;
+        pose_in_sensor.position.y = detected_reflector.centroid_y;
+        pose_in_sensor.position.z = 0.0;
+        pose_in_sensor.orientation.w = 1.0;
+
+        // full transform to robot frame
+        geometry_msgs::Pose pose_in_robot;
+        tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot_tf__[__header.frame_id]);
+		detection__.pose.pose = pose_in_robot;
+
+		// now covariance:
+		// 1. Create the 3x3 local covariance matrix for translational uncertainty
+		Eigen::Matrix3d cov_sensor_3d = Eigen::Matrix3d::Zero();
+		cov_sensor_3d(0, 0) = detected_reflector.covariance_xx;
+		cov_sensor_3d(1, 1) = detected_reflector.covariance_yy;
+		
+		// 2. Extract 3x3 Rotation from the TF
+		Eigen::Isometry3d T_eigen = tf2::transformToEigen(T_sensor_to_robot_tf__[__header.frame_id]);
+		Eigen::Matrix3d R = T_eigen.rotation();
+
+		// 3. Rotate translational covariance: Cov_rob = R * Cov_sen * R^T
+		Eigen::Matrix3d cov_robot_3d = R * cov_sensor_3d * R.transpose();
+
+		// 4. Map back to the PoseWithCovariance (6x6)
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = 0; j < 3; ++j)
+			{
+				detection__.pose.covariance[i * 6 + j] = cov_robot_3d(i, j);
+			}
+		}
+
+		// fill intensity and supports
 		detection__.intensity = detected_reflector.intensity;
 		detection__.supports = detected_reflector.supports;
 
@@ -214,44 +244,21 @@ void ReflectorPerceptor::unsubscribeFromLidars()
 
 bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 {
-	if ( !T_robot_to_sensor__.contains(__header.frame_id) )
+	if ( !T_sensor_to_robot_tf__.contains(__header.frame_id) )
 	{
-		geometry_msgs::TransformStamped T_robot_sensor; // from robot to sensor
-		Eigen::Quaterniond aux_qt;
-		double angle_z;
-
 		try
 		{
-			// get _transform from tf
-			T_robot_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
-
-			// convert to Eigen Isometry3d
-			aux_qt.coeffs() <<
-				T_robot_sensor.transform.rotation.x,
-				T_robot_sensor.transform.rotation.y,
-				T_robot_sensor.transform.rotation.z,
-				T_robot_sensor.transform.rotation.w;
-			T_robot_to_sensor__[__header.frame_id].linear() = aux_qt.matrix();
-			T_robot_to_sensor__[__header.frame_id].translation() <<
-				T_robot_sensor.transform.translation.x,
-				T_robot_sensor.transform.translation.y,
-				T_robot_sensor.transform.translation.z;
-
-			// convert to Eigen::Isometry2_d_
-			angle_z = 2.0*std::atan2(T_robot_sensor.transform.rotation.z, T_robot_sensor.transform.rotation.w);
-			T_robot_to_sensor_2d__[__header.frame_id].matrix() <<
-				std::cos(angle_z), -std::sin(angle_z), T_robot_sensor.transform.translation.x,
-				std::sin(angle_z),  std::cos(angle_z), T_robot_sensor.transform.translation.y,
-				0,0,1;
+			// Get tf (from robot to sensor)
+			geometry_msgs::TransformStamped T_robot_to_sensor;
+			T_robot_to_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+			T_sensor_to_robot_tf__[__header.frame_id] = T_robot_to_sensor;
 		}
 		catch (tf2::TransformException & __ex)
 		{
 			ROS_WARN("%s", __ex.what());
-			ros::Duration(1.0).sleep();
 			return false;
 		}
 	}
-
 	return true;
 }
 

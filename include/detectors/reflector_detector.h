@@ -35,8 +35,7 @@ class ReflectorDetector
 		bool configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range);
 
 		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end,
-			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits, // empty if not used
-			const Eigen::Isometry2d & __T_platform_sensor);
+			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits);
 
 	protected:
 
