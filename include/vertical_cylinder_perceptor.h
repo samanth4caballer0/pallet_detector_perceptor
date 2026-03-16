@@ -41,7 +41,8 @@ class VerticalCylinderPerceptor
 
 		bool enabled__ = false;
 		bool vizbose__ = false;
-		double diameter__ = 0.0;
+		double active_diameter__ = 0.0;
+		double default_diameter__ = 0.0;
 		std::string robot_frame__;
 		std::string source_name__;
 		int min_cloud_points__ = 1000;

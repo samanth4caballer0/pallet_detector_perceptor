@@ -48,7 +48,7 @@ bool VerticalCylinderPerceptor::configureParameters()
 		!getParamOrFail("vizbose", vizbose__) ||
 		!getParamOrFail("robot_frame", robot_frame__) ||
 		!getParamOrFail("source_name", source_name__) ||
-		!getParamOrFail("diameter", diameter__) ||
+		!getParamOrFail("default_diameter", default_diameter__) ||
 		!getParamOrFail("min_cloud_points", min_cloud_points__) ||
 		!getParamOrFail("crop_min", crop_min) ||
 		!getParamOrFail("crop_max", crop_max) ||
@@ -57,11 +57,12 @@ bool VerticalCylinderPerceptor::configureParameters()
 		return false;
 	}
 
-	if ( !validateDiameter(diameter__) )
+	if ( enabled__ && !validateDiameter(default_diameter__) )
 	{
-		ROS_ERROR_STREAM("Invalid parameter diameter: " << diameter__ << " [m]. It must be > 0.");
+		ROS_ERROR_STREAM("Invalid parameter default_diameter: " << default_diameter__ << " [m]. It must be > 0 when enabled_by_default is true.");
 		return false;
 	}
+	active_diameter__ = enabled__ ? default_diameter__ : 0.0;
 
 	if ( min_cloud_points__ < 1 )
 	{
@@ -104,6 +105,16 @@ bool VerticalCylinderPerceptor::enableServiceCallback(
 	target_detector::DetectorEnable::Request & __request,
 	target_detector::DetectorEnable::Response & __response)
 {
+	if ( __request.enable && !validateDiameter(__request.diameter) )
+	{
+		ROS_ERROR_STREAM("Invalid diameter for vertical cylinder detection: " << __request.diameter);
+		__response.success = false;
+		return true;
+	}
+
+	if ( __request.enable )
+		active_diameter__ = __request.diameter;
+
 	if ( !enabled__ && __request.enable )
 		subscribeToData();
 
@@ -159,7 +170,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	detector__.voxelDownsampling(voxel_size__, cloud_crop, cloud_downsampled);
 
 	const bool detection_found = detector__.detect(
-		0.5 * diameter__,
+		0.5 * active_diameter__,
 		cloud_downsampled,
 		cloud_detection,
 		T_O_S,
@@ -189,7 +200,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	detections_msg.detections[0].pose.pose.orientation.z = qt.z();
 	detections_msg.detections[0].pose.pose.orientation.w = qt.w();
 	detections_msg.detections[0].intensity = 0.0;
-	detections_msg.detections[0].radius = 0.5 * diameter__;
+	detections_msg.detections[0].radius = 0.5 * active_diameter__;
 	detections_msg.detections[0].supports = cloud_detection->size();
 	detections_publisher__.publish(detections_msg);
 
@@ -228,8 +239,8 @@ void VerticalCylinderPerceptor::publishMarkers(const target_detector::Detections
 	marker_msg.pose.orientation.y = 0.0;
 	marker_msg.pose.orientation.z = 0.0;
 	marker_msg.pose.orientation.w = std::cos(M_PI / 4.0);
-	marker_msg.scale.x = diameter__;
-	marker_msg.scale.y = diameter__;
+	marker_msg.scale.x = active_diameter__;
+	marker_msg.scale.y = active_diameter__;
 	marker_msg.scale.z = 1.0;
 	marker_msg.color.a = 0.6;
 	marker_msg.color.r = 1.0;

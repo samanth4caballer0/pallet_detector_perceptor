@@ -7,6 +7,7 @@ We can launch detections of two types:
     - Reflectors from lidar intensity
 	- Alvar bundles (we do not detect single alvars for now, so the simplest alvar detection is a bundle)
 	- TMK UWB measurements
+    - Vertical cylinders from point clouds
 
 - Composite detections: patterns of detections (patterns of primitive detections in general, but could be of composite detections as well). Available now:
     - Baseline pair: finds detections that are separated a given baseline. Example: docking reflector pairs.
@@ -56,9 +57,10 @@ In the launch file:
 For yaml files, the available types now are:
 
 - Primitive:
-    - reflector 
+    - reflector
     - alvar
 	- tmk_uwb
+    - vertical_cylinder
 - Composite:
     - baseline_pair
 
@@ -67,6 +69,7 @@ So in the launch files, you can use the following corresponding node types:
 - reflector_perceptor
 - alvar_perceptor
 - tmk_uwb_perceptor
+- vertical_cylinder_perceptor
 - baseline_pair_perceptor
 
 The nodes are called perceptors because the detectors word is reserved for the c++ classes that actually contain the code that detects stuff.
@@ -100,6 +103,17 @@ Type tmk_uwb:
 - vizbose (bool)
 - robot_frame (string)
 
+Type vertical_cylinder:
+- enabled_by_default (bool)
+- vizbose (bool)
+- robot_frame (string)
+- source_name (string)
+- default_diameter (double) -> boot-time diameter, used only when enabled_by_default is true
+- min_cloud_points (int)
+- crop_min (double[3])
+- crop_max (double[3])
+- voxel_size (double[3])
+
 Type baseline_pair:
 - vizbose (bool)
 - baseline_tolerance (double)
@@ -112,7 +126,9 @@ Each perceptor generates:
 
 - a detections topic where detections are published
 - a visuals topic where markers are publish if vizbose
-- a enable server, to enable/disable the processing. Note that alvars and baseline_pair need some parameter when enabling.
+- a enable server, to enable/disable the processing. Note that alvars, baseline_pair and vertical_cylinder need parameters when enabling.
+
+For vertical cylinders, `enable=true` requires a positive `diameter` in the enable service request. If `enabled_by_default` is true, the detector starts with `default_diameter`.
 
 ## Tracking
 
