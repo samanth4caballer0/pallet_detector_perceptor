@@ -29,10 +29,11 @@ class ReflectorDetector
 		double reflector_width__;
 		double min_reflector_intensity__;
 		double max_detection_range__;
+		int override_support_points__;
 
 	public:
 
-		bool configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range);
+		bool configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range, const int & __override_support_points);
 
 		std::vector<ReflectorDetection> detect(const double & __angle_init, const double & __angle_end,
 			const std::vector<float> & __ranges, const std::vector<float> & __intensities, const std::vector<uint8_t> & __reflector_hits);

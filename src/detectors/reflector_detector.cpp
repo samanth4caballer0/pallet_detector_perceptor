@@ -3,11 +3,12 @@
 namespace Detectors
 {
 
-bool ReflectorDetector::configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range)
+bool ReflectorDetector::configure(const double & __reflector_size, const double & __min_reflector_intensity, const double & __max_detection_range, const int & __override_support_points)
 {
 	reflector_width__ = __reflector_size;
 	min_reflector_intensity__ = __min_reflector_intensity;
 	max_detection_range__ = __max_detection_range;
+	override_support_points__ = __override_support_points;
 	return true;
 }
 
@@ -87,7 +88,9 @@ std::vector<ReflectorDetection> ReflectorDetector::detect(
 		// compute min_support_points
 		reflector_aperture = 2*std::atan2(reflector_width__/2.0, cluster.range());
 		min_support_points = std::floor(reflector_aperture / angle_increment );
-		if ( min_support_points < 3 )
+		if( override_support_points__ != 0 )
+			min_support_points = override_support_points__;
+		else if ( min_support_points < 3 )
 			min_support_points = 3;
 
 		// Only publish clusters with enough supports

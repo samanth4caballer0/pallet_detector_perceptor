@@ -49,6 +49,7 @@ class ReflectorPerceptor
 		double min_reflector_intensity__ = 0.0;
 		double max_detection_range__;
 		int decimation__;
+		int override_support_points__;
 		std::string robot_frame__;
 		std::vector<std::string> lidars__;
 

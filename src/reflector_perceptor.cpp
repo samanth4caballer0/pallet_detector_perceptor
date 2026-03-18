@@ -30,7 +30,7 @@ bool ReflectorPerceptor::init()
 	enable_server__ = nh__.advertiseService("enable", &ReflectorPerceptor::enableCallback, this);
 
 	detector__ = std::make_unique<Detectors::ReflectorDetector>();
-	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__);
+	detector__->configure(reflector_size__, min_reflector_intensity__, max_detection_range__, override_support_points__);
 
 	if ( enabled__ )
 		subscribeToLidars();
@@ -207,7 +207,8 @@ bool ReflectorPerceptor::configureParameters()
 			getParamOrFail("reflector_size", reflector_size__) &&
 			getParamOrFail("max_detection_range", max_detection_range__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
-			getParamOrFail("scan_decimation", decimation__);
+			getParamOrFail("scan_decimation", decimation__) &&
+			getParamOrFail("override_support_points", override_support_points__);
 }
 
 void ReflectorPerceptor::subscribeToLidars()
