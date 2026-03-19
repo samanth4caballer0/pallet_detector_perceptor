@@ -66,12 +66,12 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 )
 
-	add_library(detectors
-		src/detectors/reflector_detector.cpp
-		src/detectors/cluster.cpp
-		src/detectors/pcl_base_detector.cpp
-		src/detectors/vertical_cylinder_detector.cpp
-	)
+add_library(detectors
+	src/detectors/reflector_detector.cpp
+	src/detectors/cluster.cpp
+	src/detectors/pcl_base_detector.cpp
+	src/detectors/vertical_cylinder_detector.cpp
+)
 #add_dependencies(detectors
 #	${catkin_EXPORTED_TARGETS}
 #	${target_detector_EXPORTED_TARGETS}

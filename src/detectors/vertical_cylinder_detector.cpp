@@ -72,13 +72,10 @@ bool VerticalCylinderDetector::detect(
     seg.setInputNormals(normals);
     seg.segment(*inliers, *coefficients);
 
-	// check if no inliers
-    //if ( inliers->indices.empty() ) return false;
-
 	// check if enough inliers.
 	if ( inliers->indices.size() < 200 ) return false;
 
-    // extract cylinder points
+    // extract cylinder points (inliers)
     pcl::ExtractIndices<pcl::PointXYZ> extract;
     extract.setInputCloud(__cloud_in);
     extract.setIndices(inliers);
@@ -88,32 +85,70 @@ bool VerticalCylinderDetector::detect(
 	//check AABB (axis aligned bounding box)
 	pcl::PointXYZ min_pt, max_pt;
 	pcl::getMinMax3D(*__cloud_out, min_pt, max_pt);
-	//std::cout << "Min point: " << min_pt.x << ", " << min_pt.y << ", " << min_pt.z << std::endl;
-	//std::cout << "Max point: " << max_pt.x << ", " << max_pt.y << ", " << max_pt.z << std::endl;
 	double diameter = __param*2;
 	double dx = max_pt.x - min_pt.x; // distance between min and max in the x dimension (horizontal)
 	if ( ( dx < 0.8*diameter ) || ( dx > 1.1*diameter ) ) return false;
+	//std::cout << "Min point: " << min_pt.x << ", " << min_pt.y << ", " << min_pt.z << std::endl;
+	//std::cout << "Max point: " << max_pt.x << ", " << max_pt.y << ", " << max_pt.z << std::endl;
 
-    // compute cylinder pose. Model coefficients: [0-2]: point on axis, [3-5]: axis direction
-    Eigen::Vector3d axis_point(coefficients->values[0], 0, coefficients->values[2]); //point at camera height (y=0)
-	Eigen::Vector3d x_axis = -axis_point; // x of the cylinder always pointing to the camera
-	x_axis.normalize();
-    //Eigen::Vector3d z_axis(	coefficients->values[3], coefficients->values[4], coefficients->values[5]);
-	//if ( z_axis.y() > 0 ) z_axis = -z_axis; // forces z axis of the vertical cylinder always pointing to the -Y hemisphere of the camera (meaninig usually Z cylinder pointing up)
-	//std::cout << "z_axis: " << z_axis.transpose() << std::endl;
-	//z_axis.normalize();
-	Eigen::Vector3d z_axis(0,-1,0); // forces gravity constraint, assumes camera Y pointing down
-    Eigen::Vector3d y_axis = z_axis.cross(x_axis);
-    __T_O_C.linear().block<3,1>(0,0) = x_axis;
-    __T_O_C.linear().block<3,1>(0,1) = y_axis;
-    __T_O_C.linear().block<3,1>(0,2) = z_axis;
-    __T_O_C.translation() = axis_point;
+	// compute cylinder pose. Model coefficients: [0-2]: point on axis, [3-5]: axis direction
+	Eigen::Vector3d target_point(coefficients->values[0], 0, coefficients->values[2]); //point at camera height (y=0)
+  	Eigen::Vector3d target_x_axis = -target_point; // x of the cylinder always pointing to the camera
+  	target_x_axis.normalize();
+  	Eigen::Vector3d target_z_axis(0,-1,0); // forces gravity constraint, assumes camera Y pointing down
+	Eigen::Vector3d target_y_axis = target_z_axis.cross(target_x_axis);
+	__T_O_C = Eigen::Isometry3d::Identity();
+	__T_O_C.linear().block<3,1>(0,0) = target_x_axis;
+	__T_O_C.linear().block<3,1>(0,1) = target_y_axis;
+	__T_O_C.linear().block<3,1>(0,2) = target_z_axis;
+	__T_O_C.translation() = target_point;
+  	//std::cout << std::endl << __T_O_C.matrix() << std::endl;
 
-	// debugging
-	//std::cout << std::endl << __T_O_C.matrix() << std::endl;
+  	// check detection is convex. Project points to -target_x_axis, and keeps cos angle between points and -target_x_axis
+  	double point_projection;
+  	double point_cos_angle;
+  	double range_central = 0;
+  	double range_lateral = 0;
+  	unsigned int count_central = 0;
+  	unsigned int count_lateral = 0;
+  	Eigen::Vector2d pt;
+  	unsigned int ii;
+  	for ( ii=0; ii<__cloud_out->size(); ii++)
+  	{
+  		pt << __cloud_out->points[ii].x, __cloud_out->points[ii].z;
+  		point_projection = - target_x_axis.x()*pt(0) - target_x_axis.z()*pt(1);
+  		point_cos_angle = point_projection / pt.norm();
+  		if ( std::abs(point_cos_angle) > 0.99) // central barrel points
+  		{
+  			range_central += point_projection;
+  			count_central ++;
+  		}
+  		else // lateral points
+  		{
+  			range_lateral += point_projection;
+  			count_lateral ++;
+  		}
+  	}
+  	if ( ( count_central == 0 ) || ( count_lateral == 0 ) )
+  	{
+  		std::cout << "count_central: " << count_central << "; count_lateral: " << count_lateral << std::endl;
+  		return false;
+  	}
+  	range_central = range_central / count_central;
+  	range_lateral = range_lateral / count_lateral;
+  	//std::cout << "range_central: "<< range_central << std::endl;
+  	//std::cout << "range_lateral: "<< range_lateral << std::endl;
+  	if ( range_central > range_lateral )
+  	{
+		std::cout << "Not convex. Central points further than lateral points." << std::endl; 
+  		return false;
+  	}
 
-	__confidence_level =  1.0; // not used yet
-    return true;
+	// set confidence level (not used yet)
+  	__confidence_level =  1.0;
+
+	// the end
+	return true;
 }
 
 } // end of namespace

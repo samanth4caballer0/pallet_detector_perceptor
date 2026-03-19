@@ -36,12 +36,12 @@ class VerticalCylinderDetector : public PclBaseDetector
 	    //virtual bool init(const std::map<std::string, double> & __params);
 		virtual bool init();
 
-			// Detect vertical cylinder and output inlier points + pose
-			virtual bool detect(
+		// Detect vertical cylinder and output inlier points + pose
+		virtual bool detect(
 			const double & __param,
 			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out,
-			Eigen::Isometry3d & __T_O_C, // object wrt the camera (Check if better Affine3d ??)
+			Eigen::Isometry3d & __T_O_C, // object wrt the camera
 			double & __confidence_level,
 			const bool & __vizbose=false);
 
