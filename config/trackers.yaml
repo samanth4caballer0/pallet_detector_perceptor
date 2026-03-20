@@ -1,0 +1,8 @@
+docking_pairs:
+  robot_frame: "platform"
+  tracked_frame: "marker"
+  verbose_KF: False
+vertical_cylinders:
+  robot_frame: "platform"
+  tracked_frame: "vertical_cylinder"
+  verbose_KF: False

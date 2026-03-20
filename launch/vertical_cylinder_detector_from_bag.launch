@@ -18,9 +18,9 @@
   	<!-- debug namespace-->
   	<group ns="debug/perception">
 
-			<!-- vertical cylinder detector & tracker-->
-			<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
-		<rosparam file="$(find target_tracker)/config/trackers.yaml" command="load"/>
+		<!-- vertical cylinder detector & tracker-->
+		<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
+		<rosparam file="$(find target_detector)/config/trackers.yaml" command="load"/>
 		<group ns="vertical_cylinders">
 			<node
 				pkg="target_detector"

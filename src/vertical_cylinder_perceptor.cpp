@@ -206,7 +206,26 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 
 	if ( vizbose__ )
 	{
+		// publish inlier cloud
 		point_cloud_publisher__.publish(cloud_detection);
+
+		// publish viz marker
+		detections_msg.header = __cloud_in->header; // in this case keeps sensor frame id
+		detections_msg.source_name = source_name__;
+		detections_msg.detections.resize(1);
+		detections_msg.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
+		detections_msg.detections[0].pose.pose.position.x = T_O_S.translation().x();
+		detections_msg.detections[0].pose.pose.position.y = T_O_S.translation().y();
+		detections_msg.detections[0].pose.pose.position.z = T_O_S.translation().z();
+		detections_msg.detections[0].pose.covariance[0] = -1.0;
+		qt = Eigen::Quaterniond(T_O_S.linear());
+		detections_msg.detections[0].pose.pose.orientation.x = qt.x();
+		detections_msg.detections[0].pose.pose.orientation.y = qt.y();
+		detections_msg.detections[0].pose.pose.orientation.z = qt.z();
+		detections_msg.detections[0].pose.pose.orientation.w = qt.w();
+		detections_msg.detections[0].intensity = 0.0;
+		detections_msg.detections[0].radius = 0.5 * active_diameter__;
+		detections_msg.detections[0].supports = cloud_detection->size();
 		publishMarkers(detections_msg);
 	}
 }

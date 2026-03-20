@@ -118,7 +118,7 @@ bool VerticalCylinderDetector::detect(
   		pt << __cloud_out->points[ii].x, __cloud_out->points[ii].z;
   		point_projection = - target_x_axis.x()*pt(0) - target_x_axis.z()*pt(1);
   		point_cos_angle = point_projection / pt.norm();
-  		if ( std::abs(point_cos_angle) > 0.99) // central barrel points
+  		if ( std::fabs(point_cos_angle) > 0.995) // central barrel points
   		{
   			range_central += point_projection;
   			count_central ++;
@@ -131,16 +131,14 @@ bool VerticalCylinderDetector::detect(
   	}
   	if ( ( count_central == 0 ) || ( count_lateral == 0 ) )
   	{
-  		std::cout << "count_central: " << count_central << "; count_lateral: " << count_lateral << std::endl;
-  		return false;
+		std::cout << "Central or lateral points are zero: " << count_central << " / " << count_lateral << std::endl;
+		return false;
   	}
   	range_central = range_central / count_central;
   	range_lateral = range_lateral / count_lateral;
-  	//std::cout << "range_central: "<< range_central << std::endl;
-  	//std::cout << "range_lateral: "<< range_lateral << std::endl;
   	if ( range_central > range_lateral )
   	{
-		std::cout << "Not convex. Central points further than lateral points." << std::endl; 
+		std::cout << "Not convex. Central points further than lateral points: " << range_central << " / " << count_lateral << std::endl;
   		return false;
   	}
 
