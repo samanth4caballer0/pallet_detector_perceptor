@@ -10,6 +10,11 @@ int32 alvar_marker_id
 # for TYPE_VERTICAL_CYLINDER, requested cylinder diameter [m] when enabling
 float64 diameter
 
+# for TYPE_COLOR_IN_ROI, target color
+uint8 target_red
+uint8 target_green
+uint8 target_blue
+
 ---
 
 bool success

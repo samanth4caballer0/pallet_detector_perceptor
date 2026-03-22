@@ -150,6 +150,17 @@ target_link_libraries(vertical_cylinder_perceptor
 	${catkin_LIBRARIES}
 )
 
+add_executable(color_in_roi_perceptor
+	src/color_in_roi_perceptor_main.cpp
+	src/color_in_roi_perceptor.cpp
+)
+add_dependencies(color_in_roi_perceptor
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(color_in_roi_perceptor
+	${catkin_LIBRARIES}
+)
 
 install(
 	TARGETS
