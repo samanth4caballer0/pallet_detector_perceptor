@@ -21,12 +21,23 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/Marker.h>
 
+// PCL
+#include <pcl/filters/crop_box.h>
+
 // DUNA
 #include <target_detector/DetectorEnable.h>
 #include <target_detector/Detections.h>
 
 namespace TargetDetector
 {
+
+// color space HSV
+struct HSV {
+    float h; // 0–360
+    float s; // 0–1
+    float v; // 0–1
+};
+
 
 // Base class for all detectors
 class ColorInRoiPerceptor
@@ -89,6 +100,8 @@ class ColorInRoiPerceptor
 			}
 			return true;
 		};
+
+		HSV rgbToHsv(uint8_t r, uint8_t g, uint8_t b);
 
 }; // end of class
 

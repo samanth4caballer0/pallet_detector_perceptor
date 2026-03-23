@@ -169,6 +169,7 @@ install(
 		alvar_perceptor
 		tmk_uwb_perceptor
 		vertical_cylinder_perceptor
+		color_in_roi_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -52,7 +52,7 @@ color_in_roi:
   vizbose: true
   robot_frame: "platform"
   source_name: "camera"
-  crop_min: [-0.5, -0.1, 0.5]
-  crop_max: [0.5, 0.1, 0.8]
+  crop_min: [-0.1, 0.1, 0.55]
+  crop_max: [0.1, 0.2, 0.75]
   min_cloud_points: 1000
-  min_cloud_points: 1000
+  min_color_inliers: 100

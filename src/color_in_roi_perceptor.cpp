@@ -114,6 +114,62 @@ bool ColorInRoiPerceptor::enableServiceCallback(
 	return true;
 }
 
+
+void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& __cloud_in)
+{
+	if ( !enabled__ )
+		return;
+
+	if ( !__cloud_in )
+	{
+		ROS_WARN("ColorInRoiPerceptor::pointCloudCallback(): void input cloud");
+		return;
+	}
+
+	if ( static_cast<int>(__cloud_in->width * __cloud_in->height) < min_cloud_points__ )
+	{
+		ROS_WARN("ColorInRoiPerceptor::pointCloudCallback(): too few points in the input cloud");
+		return;
+	}
+
+	if ( !saveSensorTransform(__cloud_in->header) )
+	{
+		ROS_WARN("ColorInRoiPerceptor::pointCloudCallback(): static transform from robot to camera not available");
+		return;
+	}
+
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZRGB>());
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZRGB>());
+	pcl::fromROSMsg(*__cloud_in, *cloud_in);
+	pcl::CropBox<pcl::PointXYZRGB> box_filter;
+	box_filter.setMax(crop_max__);
+	box_filter.setMin(crop_min__);
+	box_filter.setInputCloud(cloud_in);
+	box_filter.setNegative(false);
+	box_filter.filter(*cloud_crop);
+	point_cloud_publisher__.publish(cloud_crop);
+
+
+	unsigned int red_count = 0;
+	unsigned int green_count = 0;
+	unsigned int blue_count = 0;
+	for (unsigned int ii=0; ii<cloud_crop->points.size(); ii++)
+	{
+		HSV hsv = rgbToHsv(cloud_crop->at(ii).r, cloud_crop->at(ii).g, cloud_crop->at(ii).b);
+		//std::cout << "Point " << ii << " -> H:" << hsv.h << " S:" << hsv.s << " V:" << hsv.v << std::endl;
+		if ( hsv.s > 0.25 )
+		{
+			if ( std::fabs( hsv.h - 0.0 ) < 20.0 ) red_count ++;
+			if ( std::fabs( hsv.h - 120.0 ) < 20.0 ) green_count ++;
+			if ( std::fabs( hsv.h - 240.0 ) < 20.0 ) blue_count ++;
+		}
+	}
+	if ( ( red_count >= green_count ) && ( red_count >= blue_count ) ) std::cout << "RED with " << red_count << " supports. " << std::endl;
+	if ( ( green_count > red_count ) && ( green_count >= blue_count ) ) std::cout << "GREEN with " << green_count << " supports. " << std::endl;
+	if ( ( blue_count > red_count ) && ( blue_count > green_count ) ) std::cout << "BLUE with " << blue_count << " supports. " << std::endl;
+}
+
+/*
 void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& __cloud_in)
 {
 	if ( !enabled__ )
@@ -153,9 +209,9 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
     }
 
 	// loop over all points. Apply ROI and get color
-	float xx,yy,zz, rgb;
+	float xx,yy,zz,rgb;
 	uint8_t rr,gg,bb;
-	uint32_t rgb_int
+	uint32_t rgb_int;
     for (int ii=0; ii< __cloud_in->height; ii++)
     {
         for (int jj=0; jj< __cloud_in->width; jj++)
@@ -177,22 +233,23 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 	            {
 	                rgb = *reinterpret_cast<const float*>(&__cloud_in->data[byte_ij + rgb_offset]);
 	                rgb_int = *reinterpret_cast<uint32_t*>(&rgb);
-	                r = (rgb_int >> 16) & 0xFF;
-	                g = (rgb_int >> 8)  & 0xFF;
-	                b = rgb_int & 0xFF;
+	                rr = (rgb_int >> 16) & 0xFF;
+	                gg = (rgb_int >> 8)  & 0xFF;
+	                bb = rgb_int & 0xFF;
 	            }
 	            else
 	            {
-	                r = cloud->data[base + r_offset];
-	                g = cloud->data[base + g_offset];
-	                b = cloud->data[base + b_offset];
+	                rr = __cloud_in->data[byte_ij + r_offset];
+	                gg = __cloud_in->data[byte_ij + g_offset];
+	                bb = __cloud_in->data[byte_ij + b_offset];
 	            }
-				std::cout << "Point (" << ii << "," << jj << ") -> R:" << (int)r << " G:" << (int)g << " B:" << (int)b << std::endl;
-
+				HSV hsv = rgbToHsv(rr, gg, bb);
+				std::cout << "Point (" << xx << "," << yy << "," << zz << ") -> H:" << hsv.h << " S:" << hsv.s << " V:" << hsv.v << std::endl;
 			}
         }
     }
 }
+*/
 
 void ColorInRoiPerceptor::subscribeToData()
 {
@@ -264,6 +321,47 @@ bool ColorInRoiPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 
 	ROS_INFO_STREAM("Static transform updated. From " << robot_frame__ << " to " << __header.frame_id);
 	return true;
+}
+
+HSV ColorInRoiPerceptor::rgbToHsv(uint8_t r, uint8_t g, uint8_t b)
+{
+    // Normalize to [0,1]
+    float rf = r / 255.0f;
+    float gf = g / 255.0f;
+    float bf = b / 255.0f;
+
+    float max = std::max({rf, gf, bf});
+    float min = std::min({rf, gf, bf});
+    float delta = max - min;
+
+    HSV hsv;
+
+    // Value
+    hsv.v = max;
+
+    // Saturation
+    if (max == 0.0f)
+        hsv.s = 0.0f;
+    else
+        hsv.s = delta / max;
+
+    // Hue
+    if (delta == 0.0f) {
+        hsv.h = 0.0f; // undefined, achromatic
+    } else {
+        if (max == rf) {
+            hsv.h = 60.0f * (fmod(((gf - bf) / delta), 6.0f));
+        } else if (max == gf) {
+            hsv.h = 60.0f * (((bf - rf) / delta) + 2.0f);
+        } else { // max == bf
+            hsv.h = 60.0f * (((rf - gf) / delta) + 4.0f);
+        }
+
+        if (hsv.h < 0.0f)
+            hsv.h += 360.0f;
+    }
+
+    return hsv;
 }
 
 } // namespace TargetDetector
