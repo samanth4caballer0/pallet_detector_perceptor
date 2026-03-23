@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!--<arg name="robot_id" default="dingo" />-->
+	<arg name="robot_id" default="robot_1" />
+	<arg name="bag_file_name" value="my_bag"/>
+	<arg name="enable_rviz" default="true" />
+
+	<!-- Rosbag play -->
+	<node
+		pkg="rosbag"
+		type="play"
+		name="rosbag_play"
+		output="screen"
+		args="--clock -r 1 -s 0 /home/beta/datasets/electrojet/2026-03-23-06-59-05.bag" >
+	</node>
+
+  	<!-- debug namespace-->
+  	<group ns="debug/perception">
+
+		<!-- color in roi detector -->
+		<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
+		<group ns="color_in_roi">
+			<node
+				pkg="target_detector"
+				type="color_in_roi_perceptor"
+				name="color_in_roi_perceptor"
+				output="screen" >
+				<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		  		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+				<remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+				<param name="/use_sim_time" type="bool" value="true" />
+			</node>
+		</group>
+
+	</group>
+
+	<!-- rviz-->
+	<group if="$(arg enable_rviz)">
+		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+		<param name="/use_sim_time" type="bool" value="true" />
+		<node
+			name="rviz"
+			pkg="rviz"
+			type="rviz"
+			args="-d $(find target_detector)/rviz/vertical_cylinder_detector.rviz">
+		</node>
+	</group>
+
+</launch>

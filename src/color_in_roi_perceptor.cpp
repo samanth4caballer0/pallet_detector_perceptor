@@ -137,11 +137,61 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 		return;
 	}
 
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZRGB>());
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZRGB>());
-	Eigen::Isometry3d T_O_S = Eigen::Isometry3d::Identity(); // object wrt sensor
-	Eigen::Isometry3d T_O_R = Eigen::Isometry3d::Identity(); // object wrt robot
-	double confidence_level = 0.0;
+	// Find RGB field offset
+	uint32_t x_offset = -1, y_offset = -1, z_offset = -1;
+    uint32_t rgb_offset = -1;
+    uint32_t r_offset = -1, g_offset = -1, b_offset = -1;
+    for (const auto& field : __cloud_in->fields)
+    {
+		if (field.name == "x") x_offset = field.offset;
+		if (field.name == "y") y_offset = field.offset;
+		if (field.name == "z") z_offset = field.offset;
+        if (field.name == "rgb") rgb_offset = field.offset;
+        if (field.name == "r") r_offset = field.offset;
+        if (field.name == "g") g_offset = field.offset;
+        if (field.name == "b") b_offset = field.offset;
+    }
+
+	// loop over all points. Apply ROI and get color
+	float xx,yy,zz, rgb;
+	uint8_t rr,gg,bb;
+	uint32_t rgb_int
+    for (int ii=0; ii< __cloud_in->height; ii++)
+    {
+        for (int jj=0; jj< __cloud_in->width; jj++)
+        {
+			// point index
+            size_t point_ij = ii * __cloud_in->width + jj;
+            size_t byte_ij = point_ij * __cloud_in->point_step;
+
+			// First check ROI, then get color
+			xx = *reinterpret_cast<const float*>(&__cloud_in->data[byte_ij + x_offset]);
+			yy = *reinterpret_cast<const float*>(&__cloud_in->data[byte_ij + y_offset]);
+			zz = *reinterpret_cast<const float*>(&__cloud_in->data[byte_ij + z_offset]);
+			if (	xx > crop_min__.x() && xx < crop_max__.x() &&
+					yy > crop_min__.y() && yy < crop_max__.y() &&
+					zz > crop_min__.z() && zz < crop_max__.z()    )
+			{
+				// COLOR
+	            if (rgb_offset >= 0)
+	            {
+	                rgb = *reinterpret_cast<const float*>(&__cloud_in->data[byte_ij + rgb_offset]);
+	                rgb_int = *reinterpret_cast<uint32_t*>(&rgb);
+	                r = (rgb_int >> 16) & 0xFF;
+	                g = (rgb_int >> 8)  & 0xFF;
+	                b = rgb_int & 0xFF;
+	            }
+	            else
+	            {
+	                r = cloud->data[base + r_offset];
+	                g = cloud->data[base + g_offset];
+	                b = cloud->data[base + b_offset];
+	            }
+				std::cout << "Point (" << ii << "," << jj << ") -> R:" << (int)r << " G:" << (int)g << " B:" << (int)b << std::endl;
+
+			}
+        }
+    }
 }
 
 void ColorInRoiPerceptor::subscribeToData()
