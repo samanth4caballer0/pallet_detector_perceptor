@@ -194,7 +194,7 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 	std::cout << "Detected color " << (unsigned int)detected_color << "; counts (rgb): " << red_count << "," << green_count << "," << blue_count << std::endl;
 
 	// If positive detection, fill ROS message
-	if ( ( win_count > 100 ) && ( detected_color == target_color__ )
+	if ( ( win_count > 100 ) && ( detected_color == target_color__ ) )
 	{
 		target_detector::Detections detections_msg;
 		detections_msg.header = __cloud_in->header;
