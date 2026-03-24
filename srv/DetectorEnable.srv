@@ -1,19 +1,17 @@
 # enable or disable the detector
 bool enable
 
-# for TYPE_BASELINE_PAIR, distance between a pair of detections (typically reflectors) that form the pattern
+# for BASELINE_PAIR, distance between a pair of detections (typically reflectors) that form the pattern
 float64 baseline
 
-# for TYPE_ALVAR, id of the tag, or id of the master tag in bundles, use -1 for all
+# for ALVAR, id of the tag, or id of the master tag in bundles, use -1 for all
 int32 alvar_marker_id
 
-# for TYPE_VERTICAL_CYLINDER, requested cylinder diameter [m] when enabling
+# for VERTICAL_CYLINDER, requested cylinder diameter [m] when enabling
 float64 diameter
 
-# for TYPE_COLOR_IN_ROI, target color
-uint8 target_red
-uint8 target_green
-uint8 target_blue
+# for COLOR_IN_ROI, requested target color
+target_detector/Color color
 
 ---
 

@@ -32,6 +32,7 @@ find_package(Eigen3 REQUIRED)
 add_message_files(
 	DIRECTORY msg
 	FILES
+		Color.msg
 		Detection.msg
 		Detections.msg
 )
