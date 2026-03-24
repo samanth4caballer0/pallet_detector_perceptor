@@ -173,7 +173,7 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 			if ( std::fabs( hsv.h - 0.0 ) < 20.0 ) red_count ++;
 			if ( std::fabs( hsv.h - 360.0 ) < 20.0 ) red_count ++;
 			if ( std::fabs( hsv.h - 120.0 ) < 20.0 ) green_count ++;
-			if ( std::fabs( hsv.h - 240.0 ) < 20.0 ) blue_count ++;
+			if ( std::fabs( hsv.h - 220.0 ) < 20.0 ) blue_count ++;
 		}
 	}
 	if ( ( red_count >= green_count ) && ( red_count >= blue_count ) )
@@ -191,7 +191,7 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 		detected_color = target_detector::Color::BLUE;
 		win_count = blue_count;
 	}
-	std::cout << "Detected color " << (unsigned int)detected_color << "; counts (rgb): " << red_count << "," << green_count << "," << blue_count << std::endl;
+	//std::cout << "Detected color " << (unsigned int)detected_color << "; counts (rgb): " << red_count << "," << green_count << "," << blue_count << std::endl;
 
 	// If positive detection, fill ROS message
 	if ( ( win_count > 100 ) && ( detected_color == target_color__ ) )
