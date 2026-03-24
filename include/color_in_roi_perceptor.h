@@ -61,13 +61,12 @@ class ColorInRoiPerceptor
 		bool vizbose__ = false;
 		std::string robot_frame__;
 		std::string source_name__;
+		uint8_t target_color__;
 		Eigen::Vector4f crop_max__;
 		Eigen::Vector4f crop_min__;
-		uint8_t target_color_r__;
-		uint8_t target_color_g__;
-		uint8_t target_color_b__;
 		int min_cloud_points__ = 1000;
-		int min_color_inliers__ = 100;
+		int min_color_inliers_percentage__ = 50;
+		std::map<uint8_t, float> color_tag_to_hue__;
 
 	public:
 

@@ -15,14 +15,18 @@ bool ColorInRoiPerceptor::init()
 	enable_server__ = nh__.advertiseService("enable", &ColorInRoiPerceptor::enableServiceCallback, this);
 	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
 
-	if ( enabled__ )
-		subscribeToData();
+	color_tag_to_hue__[target_detector::Color::RED] = 0.0;
+	color_tag_to_hue__[target_detector::Color::GREEN] = 120.0;
+	color_tag_to_hue__[target_detector::Color::BLUE] = 240.0;
 
 	if ( vizbose__ )
 	{
 		point_cloud_publisher__ = nh__.advertise<sensor_msgs::PointCloud2>("cloud_out", 1, false);
 		viz_markers_publisher__ = nh__.advertise<visualization_msgs::Marker>("visuals", 1, false);
 	}
+
+	if ( enabled__ )
+		subscribeToData();
 
 	return true;
 }
@@ -34,15 +38,16 @@ bool ColorInRoiPerceptor::configureParameters()
 	std::vector<double> crop_min;
 	std::vector<double> crop_max;
 	std::vector<double> voxel_size;
-
+	int t_color;
 	if ( !getParamOrFail("enabled_by_default", enabled__) ||
 		!getParamOrFail("vizbose", vizbose__) ||
 		!getParamOrFail("robot_frame", robot_frame__) ||
 		!getParamOrFail("source_name", source_name__) ||
+		!getParamOrFail("default_color", t_color) ||
 		!getParamOrFail("crop_min", crop_min) ||
 		!getParamOrFail("crop_max", crop_max) ||
 		!getParamOrFail("min_cloud_points", min_cloud_points__) ||
-		!getParamOrFail("min_color_inliers", min_color_inliers__) )
+		!getParamOrFail("min_color_inliers_percentage", min_color_inliers_percentage__) )
 	{
 		return false;
 	}
@@ -53,9 +58,9 @@ bool ColorInRoiPerceptor::configureParameters()
 		return false;
 	}
 
-	if ( min_color_inliers__ < 1 )
+	if ( ( min_color_inliers_percentage__ < 0 ) || ( min_color_inliers_percentage__ > 100 ) )
 	{
-		ROS_ERROR_STREAM("Invalid parameter min_color_inliers: " << min_color_inliers__ << ". It must be >= 1.");
+		ROS_ERROR_STREAM("Invalid parameter min_color_inliers_percentage: " << min_color_inliers_percentage__ << ". It must be in [0,100]");
 		return false;
 	}
 
@@ -74,6 +79,9 @@ bool ColorInRoiPerceptor::configureParameters()
 		return false;
 	}
 
+	target_color__ = static_cast<uint8_t>(t_color);
+	std::cout << "target_color: " << (unsigned int)target_color__ << std::endl;
+
 	return true;
 }
 
@@ -90,9 +98,7 @@ bool ColorInRoiPerceptor::enableServiceCallback(
 
 	if ( __request.enable )
 	{
-		target_color_r__ = __request.target_red;
-		target_color_g__ = __request.target_green;
-		target_color_b__ = __request.target_blue;
+		target_color__ = __request.color.code;
 		if ( !enabled__ )
 			subscribeToData();
 	}
@@ -117,6 +123,7 @@ bool ColorInRoiPerceptor::enableServiceCallback(
 
 void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& __cloud_in)
 {
+	// basic checks
 	if ( !enabled__ )
 		return;
 
@@ -132,12 +139,14 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 		return;
 	}
 
+	// save sensor transform (will be executed once)
 	if ( !saveSensorTransform(__cloud_in->header) )
 	{
 		ROS_WARN("ColorInRoiPerceptor::pointCloudCallback(): static transform from robot to camera not available");
 		return;
 	}
 
+	// crop
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZRGB>());
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZRGB>());
 	pcl::fromROSMsg(*__cloud_in, *cloud_in);
@@ -149,24 +158,63 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 	box_filter.filter(*cloud_crop);
 	point_cloud_publisher__.publish(cloud_crop);
 
-
+	// detect color
 	unsigned int red_count = 0;
 	unsigned int green_count = 0;
 	unsigned int blue_count = 0;
+	unsigned int win_count;
+	uint8_t detected_color;
 	for (unsigned int ii=0; ii<cloud_crop->points.size(); ii++)
 	{
 		HSV hsv = rgbToHsv(cloud_crop->at(ii).r, cloud_crop->at(ii).g, cloud_crop->at(ii).b);
 		//std::cout << "Point " << ii << " -> H:" << hsv.h << " S:" << hsv.s << " V:" << hsv.v << std::endl;
-		if ( hsv.s > 0.25 )
+		if ( hsv.s > 0.2 )
 		{
 			if ( std::fabs( hsv.h - 0.0 ) < 20.0 ) red_count ++;
+			if ( std::fabs( hsv.h - 360.0 ) < 20.0 ) red_count ++;
 			if ( std::fabs( hsv.h - 120.0 ) < 20.0 ) green_count ++;
 			if ( std::fabs( hsv.h - 240.0 ) < 20.0 ) blue_count ++;
 		}
 	}
-	if ( ( red_count >= green_count ) && ( red_count >= blue_count ) ) std::cout << "RED with " << red_count << " supports. " << std::endl;
-	if ( ( green_count > red_count ) && ( green_count >= blue_count ) ) std::cout << "GREEN with " << green_count << " supports. " << std::endl;
-	if ( ( blue_count > red_count ) && ( blue_count > green_count ) ) std::cout << "BLUE with " << blue_count << " supports. " << std::endl;
+	if ( ( red_count >= green_count ) && ( red_count >= blue_count ) )
+	{
+		detected_color = target_detector::Color::RED;
+		win_count = red_count;
+	}
+	if ( ( green_count > red_count ) && ( green_count >= blue_count ) )
+	{
+		detected_color = target_detector::Color::GREEN;
+		win_count = green_count;
+	}
+	if ( ( blue_count > red_count ) && ( blue_count > green_count ) )
+	{
+		detected_color = target_detector::Color::BLUE;
+		win_count = blue_count;
+	}
+	std::cout << "Detected color " << (unsigned int)detected_color << "; counts (rgb): " << red_count << "," << green_count << "," << blue_count << std::endl;
+
+	// If positive detection, fill ROS message
+	if ( detected_color == target_color__ )
+	{
+		target_detector::Detections detections_msg;
+		detections_msg.header = __cloud_in->header;
+		detections_msg.header.frame_id = robot_frame__;
+		detections_msg.source_name = source_name__;
+		detections_msg.detections.resize(1);
+		detections_msg.detections[0].type = target_detector::Detection::COLOR_IN_ROI;
+		detections_msg.detections[0].pose.pose.position.x = 0.5*(crop_min__.x()+crop_max__.x());
+		detections_msg.detections[0].pose.pose.position.y = 0.5*(crop_min__.y()+crop_max__.y());
+		detections_msg.detections[0].pose.pose.position.z = 0.5*(crop_min__.z()+crop_max__.z());
+		detections_msg.detections[0].pose.covariance[0] = -1.0;
+		detections_msg.detections[0].pose.pose.orientation.x = 0.0;
+		detections_msg.detections[0].pose.pose.orientation.y = 0.0;
+		detections_msg.detections[0].pose.pose.orientation.z = 0.0;
+		detections_msg.detections[0].pose.pose.orientation.w = 1.0;
+		detections_msg.detections[0].supports = win_count;
+		detections_msg.detections[0].color.code = detected_color;
+		detections_publisher__.publish(detections_msg);
+	}
+
 }
 
 /*

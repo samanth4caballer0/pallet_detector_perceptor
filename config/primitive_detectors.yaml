@@ -49,10 +49,10 @@ vertical_cylinders:
 color_in_roi:
   type: color_in_roi
   enabled_by_default: true # useful to test with rosbags, to avoid enabling from another terminal
-  default_color: 1 # values in Color.msg
   vizbose: true
   robot_frame: "platform"
   source_name: "camera"
+  default_color: 1 # values in Color.msg
   crop_min: [-0.1, 0.1, 0.55]
   crop_max: [0.1, 0.2, 0.75]
   min_cloud_points: 1000
