@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <vector>
 #include <map>
+#include <cmath>
+#include <cctype>
 
 // EIGEN
 #include <eigen3/Eigen/Dense>
@@ -65,7 +67,7 @@ class ColorInRoiPerceptor
 		Eigen::Vector4f crop_max__;
 		Eigen::Vector4f crop_min__;
 		int min_cloud_points__ = 1000;
-		int min_color_inliers_percentage__ = 50;
+		int min_color_inliers_points__ = 100;
 		std::map<uint8_t, float> color_tag_to_hue__;
 
 	public:
@@ -88,6 +90,9 @@ class ColorInRoiPerceptor
 		void publishMarkers(const target_detector::Detections & __detections_msg);
 
 		bool saveSensorTransform(const std_msgs::Header & __header);
+		bool parseColorCode(const std::string & __color_name, uint8_t & __color_code) const;
+		float normalizeHue(float __hue_deg) const;
+		float circularHueDistance(float __first_hue_deg, float __second_hue_deg) const;
 
 		template <typename T>
 		bool getParamOrFail(const std::string & __name, T& __variable)

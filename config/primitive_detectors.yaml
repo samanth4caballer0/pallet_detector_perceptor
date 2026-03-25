@@ -52,8 +52,11 @@ color_in_roi:
   vizbose: true
   robot_frame: "platform"
   source_name: "camera"
-  default_color: 1 # values in Color.msg
+  default_color: "red" # one of: red, green, blue, unknown
+  red_hue_center_deg: 0
+  green_hue_center_deg: 120
+  blue_hue_center_deg: 240
   crop_min: [-0.1, 0.1, 0.55]
   crop_max: [0.1, 0.2, 0.75]
   min_cloud_points: 1000
-  min_color_inliers_percentage: 70 # percentage of points in the crop that must be of the specified color to consider it a detection
+  min_color_inliers_points: 100 # minimum number of ROI points that must match the requested color to consider it a detection
