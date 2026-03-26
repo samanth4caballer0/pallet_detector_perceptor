@@ -77,6 +77,7 @@ add_library(detectors
 	src/detectors/cluster.cpp
 	src/detectors/pcl_base_detector.cpp
 	src/detectors/vertical_cylinder_detector.cpp
+	src/detectors/color_in_roi_detector.cpp
 )
 #add_dependencies(detectors
 #	${catkin_EXPORTED_TARGETS}
@@ -156,10 +157,12 @@ add_executable(color_in_roi_perceptor
 	src/color_in_roi_perceptor.cpp
 )
 add_dependencies(color_in_roi_perceptor
+	detectors
 	${target_detector_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(color_in_roi_perceptor
+	detectors
 	${catkin_LIBRARIES}
 )
 

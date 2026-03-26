@@ -1,4 +1,5 @@
 docking_pairs:
   type: baseline_pair
   vizbose: true
+  robot_frame: "platform"
   baseline_tolerance: 0.03

@@ -161,8 +161,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downsampled(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_detection(new pcl::PointCloud<pcl::PointXYZ>());
-	Eigen::Isometry3d T_O_S = Eigen::Isometry3d::Identity(); // object wrt sensor
-	Eigen::Isometry3d T_O_R = Eigen::Isometry3d::Identity(); // object wrt robot
+	Eigen::Isometry3d T_object_in_sensor = Eigen::Isometry3d::Identity();
 	double confidence_level = 0.0;
 
 	pcl::fromROSMsg(*__cloud_in, *cloud_in);
@@ -173,32 +172,34 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 		0.5 * active_diameter__,
 		cloud_downsampled,
 		cloud_detection,
-		T_O_S,
+		T_object_in_sensor,
 		confidence_level,
 		vizbose__);
 
 	if ( !detection_found )
 		return;
 
-	T_O_R = T_robot_to_sensor__[__cloud_in->header.frame_id] * T_O_S;
-
 	target_detector::Detections detections_msg;
-	Eigen::Quaterniond qt;
+	const Eigen::Quaterniond sensor_orientation(T_object_in_sensor.linear());
+	geometry_msgs::Pose pose_in_sensor;
+	pose_in_sensor.position.x = T_object_in_sensor.translation().x();
+	pose_in_sensor.position.y = T_object_in_sensor.translation().y();
+	pose_in_sensor.position.z = T_object_in_sensor.translation().z();
+	pose_in_sensor.orientation.x = sensor_orientation.x();
+	pose_in_sensor.orientation.y = sensor_orientation.y();
+	pose_in_sensor.orientation.z = sensor_orientation.z();
+	pose_in_sensor.orientation.w = sensor_orientation.w();
+
+	geometry_msgs::Pose pose_in_robot;
+	tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__cloud_in->header.frame_id]);
 
 	detections_msg.header = __cloud_in->header;
 	detections_msg.header.frame_id = robot_frame__;
 	detections_msg.source_name = source_name__;
 	detections_msg.detections.resize(1);
 	detections_msg.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
-	detections_msg.detections[0].pose.pose.position.x = T_O_R.translation().x();
-	detections_msg.detections[0].pose.pose.position.y = T_O_R.translation().y();
-	detections_msg.detections[0].pose.pose.position.z = T_O_R.translation().z();
+	detections_msg.detections[0].pose.pose = pose_in_robot;
 	detections_msg.detections[0].pose.covariance[0] = -1.0;
-	qt = Eigen::Quaterniond(T_O_R.linear());
-	detections_msg.detections[0].pose.pose.orientation.x = qt.x();
-	detections_msg.detections[0].pose.pose.orientation.y = qt.y();
-	detections_msg.detections[0].pose.pose.orientation.z = qt.z();
-	detections_msg.detections[0].pose.pose.orientation.w = qt.w();
 	detections_msg.detections[0].intensity = 0.0;
 	detections_msg.detections[0].radius = 0.5 * active_diameter__;
 	detections_msg.detections[0].supports = cloud_detection->size();
@@ -214,15 +215,8 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 		detections_msg.source_name = source_name__;
 		detections_msg.detections.resize(1);
 		detections_msg.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
-		detections_msg.detections[0].pose.pose.position.x = T_O_S.translation().x();
-		detections_msg.detections[0].pose.pose.position.y = T_O_S.translation().y();
-		detections_msg.detections[0].pose.pose.position.z = T_O_S.translation().z();
+		detections_msg.detections[0].pose.pose = pose_in_sensor;
 		detections_msg.detections[0].pose.covariance[0] = -1.0;
-		qt = Eigen::Quaterniond(T_O_S.linear());
-		detections_msg.detections[0].pose.pose.orientation.x = qt.x();
-		detections_msg.detections[0].pose.pose.orientation.y = qt.y();
-		detections_msg.detections[0].pose.pose.orientation.z = qt.z();
-		detections_msg.detections[0].pose.pose.orientation.w = qt.w();
 		detections_msg.detections[0].intensity = 0.0;
 		detections_msg.detections[0].radius = 0.5 * active_diameter__;
 		detections_msg.detections[0].supports = cloud_detection->size();
@@ -287,13 +281,14 @@ void VerticalCylinderPerceptor::publishMarkers(const target_detector::Detections
 
 bool VerticalCylinderPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 {
-	if ( T_robot_to_sensor__.contains(__header.frame_id) )
+	if ( T_sensor_to_robot__.contains(__header.frame_id) )
 		return true;
 
-	geometry_msgs::TransformStamped tr_st;
 	try
 	{
-		tr_st = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, ros::Time(0), ros::Duration(1.0));
+		geometry_msgs::TransformStamped T_sensor_to_robot;
+		T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+		T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
 	}
 	catch (tf2::TransformException & ex)
 	{
@@ -301,19 +296,6 @@ bool VerticalCylinderPerceptor::saveSensorTransform(const std_msgs::Header & __h
 		ROS_WARN_STREAM("Error getting transform from " << robot_frame__ << " to " << __header.frame_id);
 		return false;
 	}
-
-	T_robot_to_sensor__[__header.frame_id].translation() <<
-		tr_st.transform.translation.x,
-		tr_st.transform.translation.y,
-		tr_st.transform.translation.z;
-
-	Eigen::Quaterniond qq(
-		tr_st.transform.rotation.w,
-		tr_st.transform.rotation.x,
-		tr_st.transform.rotation.y,
-		tr_st.transform.rotation.z);
-	T_robot_to_sensor__[__header.frame_id].linear() = qq.toRotationMatrix();
-	T_robot_to_sensor__[__header.frame_id].matrix().block<1,4>(3,0) << 0, 0, 0, 1;
 
 	ROS_INFO_STREAM("Static transform updated. From " << robot_frame__ << " to " << __header.frame_id);
 	return true;

@@ -112,15 +112,18 @@ void ReflectorPerceptor::processScan(
 	for (auto & detected_reflector : detected_reflectors)
 	{
 		// pose in sensor frame
-        geometry_msgs::Pose pose_in_sensor;
-        pose_in_sensor.position.x = detected_reflector.centroid_x;
-        pose_in_sensor.position.y = detected_reflector.centroid_y;
-        pose_in_sensor.position.z = 0.0;
-        pose_in_sensor.orientation.w = 1.0;
+		geometry_msgs::Pose pose_in_sensor;
+		pose_in_sensor.position.x = detected_reflector.centroid_x;
+		pose_in_sensor.position.y = detected_reflector.centroid_y;
+		pose_in_sensor.position.z = 0.0;
+		pose_in_sensor.orientation.x = 0.0;
+		pose_in_sensor.orientation.y = 0.0;
+		pose_in_sensor.orientation.z = 0.0;
+		pose_in_sensor.orientation.w = 1.0;
 
-        // full transform to robot frame
-        geometry_msgs::Pose pose_in_robot;
-        tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot_tf__[__header.frame_id]);
+		// Full transform from sensor frame into robot frame.
+		geometry_msgs::Pose pose_in_robot;
+		tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__header.frame_id]);
 		detection__.pose.pose = pose_in_robot;
 
 		// now covariance:
@@ -130,7 +133,7 @@ void ReflectorPerceptor::processScan(
 		cov_sensor_3d(1, 1) = detected_reflector.covariance_yy;
 		
 		// 2. Extract 3x3 Rotation from the TF
-		Eigen::Isometry3d T_eigen = tf2::transformToEigen(T_sensor_to_robot_tf__[__header.frame_id]);
+		Eigen::Isometry3d T_eigen = tf2::transformToEigen(T_sensor_to_robot__[__header.frame_id]);
 		Eigen::Matrix3d R = T_eigen.rotation();
 
 		// 3. Rotate translational covariance: Cov_rob = R * Cov_sen * R^T
@@ -245,14 +248,13 @@ void ReflectorPerceptor::unsubscribeFromLidars()
 
 bool ReflectorPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 {
-	if ( !T_sensor_to_robot_tf__.contains(__header.frame_id) )
+	if ( !T_sensor_to_robot__.contains(__header.frame_id) )
 	{
 		try
 		{
-			// Get tf (from robot to sensor)
-			geometry_msgs::TransformStamped T_robot_to_sensor;
-			T_robot_to_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
-			T_sensor_to_robot_tf__[__header.frame_id] = T_robot_to_sensor;
+			geometry_msgs::TransformStamped T_sensor_to_robot;
+			T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+			T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
 		}
 		catch (tf2::TransformException & __ex)
 		{

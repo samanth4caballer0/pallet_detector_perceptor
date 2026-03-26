@@ -46,8 +46,7 @@ class AlvarPerceptor
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, Eigen::Isometry3d> T_robot_to_sensor__;
-		std::map<std::string, Eigen::Isometry2d> T_robot_to_sensor_2d__;
+		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot__;
 
 	public:
 

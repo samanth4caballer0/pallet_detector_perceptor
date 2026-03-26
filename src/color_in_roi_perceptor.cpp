@@ -1,5 +1,7 @@
 #include "color_in_roi_perceptor.h"
 
+#include <cmath>
+
 namespace TargetDetector
 {
 
@@ -33,7 +35,6 @@ bool ColorInRoiPerceptor::configureParameters()
 
 	std::vector<double> crop_min;
 	std::vector<double> crop_max;
-	std::vector<double> voxel_size;
 	double red_hue_center_deg;
 	double green_hue_center_deg;
 	double blue_hue_center_deg;
@@ -81,9 +82,15 @@ bool ColorInRoiPerceptor::configureParameters()
 		return false;
 	}
 
-	color_tag_to_hue__[target_detector::Color::RED] = normalizeHue(static_cast<float>(red_hue_center_deg));
-	color_tag_to_hue__[target_detector::Color::GREEN] = normalizeHue(static_cast<float>(green_hue_center_deg));
-	color_tag_to_hue__[target_detector::Color::BLUE] = normalizeHue(static_cast<float>(blue_hue_center_deg));
+	std::map<uint8_t, float> color_tag_to_hue;
+	color_tag_to_hue[target_detector::Color::RED] = static_cast<float>(red_hue_center_deg);
+	color_tag_to_hue[target_detector::Color::GREEN] = static_cast<float>(green_hue_center_deg);
+	color_tag_to_hue[target_detector::Color::BLUE] = static_cast<float>(blue_hue_center_deg);
+	if ( !detector__.configure(crop_min__, crop_max__, min_color_inliers_points__, color_tag_to_hue) )
+	{
+		ROS_ERROR("Failed to configure ColorInRoiDetector");
+		return false;
+	}
 
 	if ( !parseColorCode(default_color_name, target_color__) )
 	{
@@ -149,80 +156,38 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 		return;
 	}
 
-	// crop
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZRGB>());
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZRGB>());
 	pcl::fromROSMsg(*__cloud_in, *cloud_in);
-	pcl::CropBox<pcl::PointXYZRGB> box_filter;
-	box_filter.setMax(crop_max__);
-	box_filter.setMin(crop_min__);
-	box_filter.setInputCloud(cloud_in);
-	box_filter.setNegative(false);
-	box_filter.filter(*cloud_crop);
-	point_cloud_publisher__.publish(cloud_crop);
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_roi(new pcl::PointCloud<pcl::PointXYZRGB>());
+	Detectors::ColorInRoiDetection detection_in_sensor;
+	const bool detection_found = detector__.detect(cloud_in, cloud_roi, detection_in_sensor);
 
-	if ( cloud_crop->empty() )
+	if ( vizbose__ )
+		point_cloud_publisher__.publish(cloud_roi);
+
+	if ( !detection_found )
 		return;
 
-	// detect color
-	unsigned int red_count = 0;
-	unsigned int green_count = 0;
-	unsigned int blue_count = 0;
-	unsigned int win_count = 0;
-	uint8_t detected_color = target_detector::Color::UNKNOWN;
-	const float hue_tolerance_deg = 20.0f;
-	for ( const auto & roi_point : cloud_crop->points )
-	{
-		HSV hsv = rgbToHsv(roi_point.r, roi_point.g, roi_point.b);
-		//std::cout << "Point " << ii << " -> H:" << hsv.h << " S:" << hsv.s << " V:" << hsv.v << std::endl;
-		if ( hsv.s > 0.2 )
-		{
-			if ( circularHueDistance(hsv.h, color_tag_to_hue__.at(target_detector::Color::RED)) < hue_tolerance_deg )
-				red_count ++;
-			if ( circularHueDistance(hsv.h, color_tag_to_hue__.at(target_detector::Color::GREEN)) < hue_tolerance_deg )
-				green_count ++;
-			if ( circularHueDistance(hsv.h, color_tag_to_hue__.at(target_detector::Color::BLUE)) < hue_tolerance_deg )
-				blue_count ++;
-		}
-	}
-	if ( ( red_count >= green_count ) && ( red_count >= blue_count ) )
-	{
-		detected_color = target_detector::Color::RED;
-		win_count = red_count;
-	}
-	if ( ( green_count > red_count ) && ( green_count >= blue_count ) )
-	{
-		detected_color = target_detector::Color::GREEN;
-		win_count = green_count;
-	}
-	if ( ( blue_count > red_count ) && ( blue_count > green_count ) )
-	{
-		detected_color = target_detector::Color::BLUE;
-		win_count = blue_count;
-	}
-	//std::cout << "Detected color " << (unsigned int)detected_color << "; counts (rgb): " << red_count << "," << green_count << "," << blue_count << std::endl;
+	if ( detection_in_sensor.detected_color != target_color__ )
+		return;
 
-	// If positive detection, fill ROS message
-	if ( ( win_count >= static_cast<unsigned int>(min_color_inliers_points__) ) && ( detected_color == target_color__ ) )
-	{
-		target_detector::Detections detections_msg;
-		detections_msg.header = __cloud_in->header;
-		detections_msg.header.frame_id = robot_frame__;
-		detections_msg.source_name = source_name__;
-		detections_msg.detections.resize(1);
-		detections_msg.detections[0].type = target_detector::Detection::COLOR_IN_ROI;
-		detections_msg.detections[0].pose.pose.position.x = 0.5*(crop_min__.x()+crop_max__.x());
-		detections_msg.detections[0].pose.pose.position.y = 0.5*(crop_min__.y()+crop_max__.y());
-		detections_msg.detections[0].pose.pose.position.z = 0.5*(crop_min__.z()+crop_max__.z());
-		detections_msg.detections[0].pose.covariance[0] = -1.0;
-		detections_msg.detections[0].pose.pose.orientation.x = 0.0;
-		detections_msg.detections[0].pose.pose.orientation.y = 0.0;
-		detections_msg.detections[0].pose.pose.orientation.z = 0.0;
-		detections_msg.detections[0].pose.pose.orientation.w = 1.0;
-		detections_msg.detections[0].supports = win_count;
-		detections_msg.detections[0].color.code = detected_color;
-		detections_publisher__.publish(detections_msg);
-	}
+	geometry_msgs::Pose pose_in_robot;
+	tf2::doTransform(detection_in_sensor.pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__cloud_in->header.frame_id]);
+
+	target_detector::Detections detections_msg;
+	detections_msg.header = __cloud_in->header;
+	detections_msg.header.frame_id = robot_frame__;
+	detections_msg.source_name = source_name__;
+	detections_msg.detections.resize(1);
+	detections_msg.detections[0].type = target_detector::Detection::COLOR_IN_ROI;
+	detections_msg.detections[0].pose.pose = pose_in_robot;
+	detections_msg.detections[0].pose.covariance[0] = -1.0;
+	detections_msg.detections[0].supports = detection_in_sensor.supports;
+	detections_msg.detections[0].color.code = detection_in_sensor.detected_color;
+	detections_publisher__.publish(detections_msg);
+
+	if ( vizbose__ )
+		publishMarkers(detections_msg);
 
 }
 
@@ -266,13 +231,14 @@ void ColorInRoiPerceptor::publishMarkers(const target_detector::Detections & __d
 
 bool ColorInRoiPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 {
-	if ( T_robot_to_sensor__.contains(__header.frame_id) )
+	if ( T_sensor_to_robot__.contains(__header.frame_id) )
 		return true;
 
-	geometry_msgs::TransformStamped tr_st;
 	try
 	{
-		tr_st = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, ros::Time(0), ros::Duration(1.0));
+		geometry_msgs::TransformStamped T_sensor_to_robot;
+		T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+		T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
 	}
 	catch (tf2::TransformException & ex)
 	{
@@ -280,19 +246,6 @@ bool ColorInRoiPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 		ROS_WARN_STREAM("Error getting transform from " << robot_frame__ << " to " << __header.frame_id);
 		return false;
 	}
-
-	T_robot_to_sensor__[__header.frame_id].translation() <<
-		tr_st.transform.translation.x,
-		tr_st.transform.translation.y,
-		tr_st.transform.translation.z;
-
-	Eigen::Quaterniond qq(
-		tr_st.transform.rotation.w,
-		tr_st.transform.rotation.x,
-		tr_st.transform.rotation.y,
-		tr_st.transform.rotation.z);
-	T_robot_to_sensor__[__header.frame_id].linear() = qq.toRotationMatrix();
-	T_robot_to_sensor__[__header.frame_id].matrix().block<1,4>(3,0) << 0, 0, 0, 1;
 
 	ROS_INFO_STREAM("Static transform updated. From " << robot_frame__ << " to " << __header.frame_id);
 	return true;
@@ -330,64 +283,4 @@ bool ColorInRoiPerceptor::parseColorCode(const std::string & __color_name, uint8
 
 	return false;
 }
-
-float ColorInRoiPerceptor::normalizeHue(float __hue_deg) const
-{
-	float normalized_hue = std::fmod(__hue_deg, 360.0f);
-	if ( normalized_hue < 0.0f )
-		normalized_hue += 360.0f;
-	return normalized_hue;
-}
-
-float ColorInRoiPerceptor::circularHueDistance(float __first_hue_deg, float __second_hue_deg) const
-{
-	const float normalized_first_hue = normalizeHue(__first_hue_deg);
-	const float normalized_second_hue = normalizeHue(__second_hue_deg);
-	const float hue_distance = std::fabs(normalized_first_hue - normalized_second_hue);
-	return std::min(hue_distance, 360.0f - hue_distance);
-}
-
-HSV ColorInRoiPerceptor::rgbToHsv(uint8_t r, uint8_t g, uint8_t b)
-{
-	// Normalize to [0,1]
-	float rf = r / 255.0f;
-	float gf = g / 255.0f;
-	float bf = b / 255.0f;
-
-	float max = std::max({rf, gf, bf});
-	float min = std::min({rf, gf, bf});
-	float delta = max - min;
-
-	HSV hsv;
-
-	// Value
-	hsv.v = max;
-
-	// Saturation
-	if ( max == 0.0f )
-		hsv.s = 0.0f;
-	else
-		hsv.s = delta / max;
-
-	// Hue
-	if ( delta == 0.0f )
-	{
-		hsv.h = 0.0f; // undefined, achromatic
-	}
-	else
-	{
-		if ( max == rf )
-			hsv.h = 60.0f * (fmod(((gf - bf) / delta), 6.0f));
-		else if ( max == gf )
-			hsv.h = 60.0f * (((bf - rf) / delta) + 2.0f);
-		else
-			hsv.h = 60.0f * (((rf - gf) / delta) + 4.0f); // max == bf
-
-		if ( hsv.h < 0.0f )
-			hsv.h += 360.0f;
-	}
-
-	return hsv;
-}
-
 }

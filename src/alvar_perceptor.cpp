@@ -1,5 +1,7 @@
 #include "alvar_perceptor.h"
 
+#include <cmath>
+
 namespace TargetDetector
 {
 
@@ -70,12 +72,11 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 	Eigen::Matrix2d jacobian_range_bearing; // Jacobian wrt range and bearing
 	Eigen::Matrix2d Covariance_xy_camera; // Covariance in xy space wrt camera
 	Eigen::Matrix2d Covariance_xy_robot; // Covariance in xy space wrt robot
-	Eigen::Matrix2d Rotation_robot_to_camera; //2D rotation of robot to camera (camera wrt robot)
-	Eigen::Quaterniond auxiliar_quaternion;
-	Eigen::Isometry3d T_camera_to_alvar; // alvar wrt camera (camera to alvar), from alvar detector
-	Eigen::Isometry3d T_robot_to_alvar; // alvar wrt platform (platform to alvar), the one we want to compute
+	Eigen::Quaterniond sensor_orientation;
+	Eigen::Quaterniond bundle_orientation;
+	Eigen::Matrix2d Rotation_sensor_to_robot;
+	Eigen::Isometry3d T_marker_in_sensor; // marker wrt sensor after convention swap
 	Eigen::Isometry3d T_alvar_convention_to_beta_convention; // just a rotation of axis to match beta convention
-	Eigen::Quaterniond quaternion_robot_to_alvar;
 
 	// Looking at alvar marker, marker frame is: X to the right, Y up, Z towards the viewer
 	// beta convention is: X towards the viewer, Y to the right, Z up
@@ -114,30 +115,45 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 		Covariance_xy_camera = jacobian_range_bearing*covariance_range_bearing*jacobian_range_bearing.transpose();
 
 		// 6. Compute the covariance in platform xy space
-		Rotation_robot_to_camera = T_robot_to_sensor__[__bundles.markers.front().header.frame_id].matrix().block<2,2>(0,0);
-		Covariance_xy_robot = Rotation_robot_to_camera.inverse()*Covariance_xy_camera*Rotation_robot_to_camera.inverse().transpose();
+		const geometry_msgs::TransformStamped & sensor_to_robot_transform = T_sensor_to_robot__[bundle.header.frame_id];
+		sensor_orientation = Eigen::Quaterniond(
+			sensor_to_robot_transform.transform.rotation.w,
+			sensor_to_robot_transform.transform.rotation.x,
+			sensor_to_robot_transform.transform.rotation.y,
+			sensor_to_robot_transform.transform.rotation.z);
+		Rotation_sensor_to_robot = sensor_orientation.toRotationMatrix().block<2,2>(0,0);
+		Covariance_xy_robot = Rotation_sensor_to_robot * Covariance_xy_camera * Rotation_sensor_to_robot.transpose();
 
-		// 7. Transform the detection expressed in sensor frame to be expressed in robot frame in our convention
-		auxiliar_quaternion.coeffs() <<	bundle.pose.pose.orientation.x,
-							bundle.pose.pose.orientation.y,
-							bundle.pose.pose.orientation.z,
-							bundle.pose.pose.orientation.w;
-		T_camera_to_alvar.linear() = auxiliar_quaternion.toRotationMatrix();
-		T_camera_to_alvar.translation() <<	bundle.pose.pose.position.x,
+		// 7. Transform the detection expressed in sensor frame to be expressed in robot frame in our convention.
+		bundle_orientation = Eigen::Quaterniond(
+			bundle.pose.pose.orientation.w,
+			bundle.pose.pose.orientation.x,
+			bundle.pose.pose.orientation.y,
+			bundle.pose.pose.orientation.z);
+		T_marker_in_sensor = Eigen::Isometry3d::Identity();
+		T_marker_in_sensor.linear() = bundle_orientation.toRotationMatrix();
+		T_marker_in_sensor.translation() <<	bundle.pose.pose.position.x,
 											bundle.pose.pose.position.y,
 											bundle.pose.pose.position.z;
-		// Full transform: robot <- camera <- alvar <- convention swap
-		T_robot_to_alvar = T_robot_to_sensor__[__bundles.markers.front().header.frame_id] * T_camera_to_alvar * T_alvar_convention_to_beta_convention;
-		quaternion_robot_to_alvar = Eigen::Quaterniond(T_robot_to_alvar.linear());
+		T_marker_in_sensor = T_marker_in_sensor * T_alvar_convention_to_beta_convention;
+
+		geometry_msgs::Pose pose_in_sensor;
+		const Eigen::Quaterniond marker_orientation_in_sensor(T_marker_in_sensor.linear());
+		pose_in_sensor.position.x = T_marker_in_sensor.translation().x();
+		pose_in_sensor.position.y = T_marker_in_sensor.translation().y();
+		pose_in_sensor.position.z = T_marker_in_sensor.translation().z();
+		pose_in_sensor.orientation.x = marker_orientation_in_sensor.x();
+		pose_in_sensor.orientation.y = marker_orientation_in_sensor.y();
+		pose_in_sensor.orientation.z = marker_orientation_in_sensor.z();
+		pose_in_sensor.orientation.w = marker_orientation_in_sensor.w();
+
+		geometry_msgs::Pose pose_in_robot;
+		tf2::doTransform(pose_in_sensor, pose_in_robot, sensor_to_robot_transform);
 
 		detection__.id = bundle.id;
-		detection__.pose.pose.position.x = T_robot_to_alvar.translation().x();
-		detection__.pose.pose.position.y = T_robot_to_alvar.translation().y();
-		detection__.pose.pose.position.z = T_robot_to_alvar.translation().z();
-		detection__.pose.pose.orientation.x = quaternion_robot_to_alvar.x();
-		detection__.pose.pose.orientation.y = quaternion_robot_to_alvar.y();
-		detection__.pose.pose.orientation.z = quaternion_robot_to_alvar.z();
-		detection__.pose.pose.orientation.w = quaternion_robot_to_alvar.w();
+		detection__.pose.pose = pose_in_robot;
+		for ( auto & covariance_value : detection__.pose.covariance )
+			covariance_value = 0.0;
 		detection__.pose.covariance[0] = Covariance_xy_robot(0,0); // Cxx
 		detection__.pose.covariance[1] = Covariance_xy_robot(0,1); // Cxy
 		detection__.pose.covariance[6] = Covariance_xy_robot(1,0); // Cyx
@@ -268,40 +284,17 @@ void AlvarPerceptor::publishMarkers(const target_detector::Detections & __detect
 
 bool AlvarPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 {
-	if ( !T_robot_to_sensor__.contains(__header.frame_id) )
+	if ( !T_sensor_to_robot__.contains(__header.frame_id) )
 	{
-		geometry_msgs::TransformStamped T_robot_sensor; // from robot to sensor
-		Eigen::Quaterniond aux_qt;
-		double angle_z;
-
 		try
 		{
-			// get _transform from tf
-			T_robot_sensor = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(0.0));
-
-			// convert to Eigen Isometry3d
-			aux_qt.coeffs() <<
-				T_robot_sensor.transform.rotation.x,
-				T_robot_sensor.transform.rotation.y,
-				T_robot_sensor.transform.rotation.z,
-				T_robot_sensor.transform.rotation.w;
-			T_robot_to_sensor__[__header.frame_id].linear() = aux_qt.matrix();
-			T_robot_to_sensor__[__header.frame_id].translation() <<
-				T_robot_sensor.transform.translation.x,
-				T_robot_sensor.transform.translation.y,
-				T_robot_sensor.transform.translation.z;
-
-			// convert to Eigen::Isometry2_d_
-			angle_z = 2.0*std::atan2(T_robot_sensor.transform.rotation.z, T_robot_sensor.transform.rotation.w);
-			T_robot_to_sensor_2d__[__header.frame_id].matrix() <<
-				std::cos(angle_z), -std::sin(angle_z), T_robot_sensor.transform.translation.x,
-				std::sin(angle_z),  std::cos(angle_z), T_robot_sensor.transform.translation.y,
-				0,0,1;
+			geometry_msgs::TransformStamped T_sensor_to_robot;
+			T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
+			T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
 		}
 		catch (tf2::TransformException & __ex)
 		{
 			ROS_WARN("%s", __ex.what());
-			ros::Duration(1.0).sleep();
 			return false;
 		}
 	}

@@ -36,6 +36,15 @@ void BaselinePairPerceptor::detectionsInCallback(const target_detector::Detectio
 	detections_out.header = __detections_in.header;
 	detections_out.source_name = __detections_in.source_name;
 
+	if ( __detections_in.header.frame_id != robot_frame__ )
+	{
+		ROS_WARN_STREAM_THROTTLE(
+			5.0,
+			"BaselinePairPerceptor expects detections in frame '" << robot_frame__
+			<< "' but received '" << __detections_in.header.frame_id << "'.");
+		return;
+	}
+
 	// check all detection pairs for correct baseline
 	double actual_baseline, angle;
 	Eigen::Vector3d detection_one;
@@ -113,7 +122,8 @@ bool BaselinePairPerceptor::enableCallback(target_detector::DetectorEnable::Requ
 bool BaselinePairPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
-	return	getParamOrFail("baseline_tolerance", baseline_tolerance__) &&
+	return	getParamOrFail("robot_frame", robot_frame__) &&
+			getParamOrFail("baseline_tolerance", baseline_tolerance__) &&
 			getParamOrFail("vizbose", vizbose__);
 }
 

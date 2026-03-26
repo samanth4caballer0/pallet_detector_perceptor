@@ -53,18 +53,21 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 
 	// Transform each tmk_uwb measurement from sensor frame to robot frame
 	// Assumes radio beacons both onboard and landmarks mounted with z axis pointing down, so invert the sign at azimuth and cp_azimuth
-	geometry_msgs::Pose sensor_pose;
-	sensor_pose.position.x = __msg.range*std::cos(-__msg.azimuth);
-	sensor_pose.position.y = __msg.range*std::sin(-__msg.azimuth);
-	sensor_pose.orientation.z = std::sin((M_PI - __msg.azimuth + __msg.counterpart_azimuth) /2.0);
-	sensor_pose.orientation.w = std::cos((M_PI - __msg.azimuth + __msg.counterpart_azimuth) /2.0);
+	geometry_msgs::Pose pose_in_sensor;
+	pose_in_sensor.position.x = __msg.range*std::cos(-__msg.azimuth);
+	pose_in_sensor.position.y = __msg.range*std::sin(-__msg.azimuth);
+	pose_in_sensor.position.z = 0.0;
+	pose_in_sensor.orientation.x = 0.0;
+	pose_in_sensor.orientation.y = 0.0;
+	pose_in_sensor.orientation.z = std::sin((M_PI - __msg.azimuth + __msg.counterpart_azimuth) /2.0);
+	pose_in_sensor.orientation.w = std::cos((M_PI - __msg.azimuth + __msg.counterpart_azimuth) /2.0);
 
-	geometry_msgs::Pose robot_pose;
-	tf2::doTransform(sensor_pose, robot_pose, T_sensor_to_robot__[__msg.header.frame_id]);
+	geometry_msgs::Pose pose_in_robot;
+	tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__msg.header.frame_id]);
 
 	// convert to detection
 	detection__.id = __msg.anchor_id;
-	detection__.pose.pose = robot_pose;
+	detection__.pose.pose = pose_in_robot;
 	detections.detections.push_back(detection__);
 
 	detections_out_publisher__.publish(detections);
@@ -136,14 +139,12 @@ bool TmkUwbPerceptor::saveSensorTransform(const std_msgs::Header & __header)
 
 		try
 		{
-			// get _transform from tf
-			T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(0.0));
+			T_sensor_to_robot = tf_buffer__.lookupTransform(robot_frame__, __header.frame_id, __header.stamp, ros::Duration(1.0));
 			T_sensor_to_robot__[__header.frame_id] = T_sensor_to_robot;
 		}
 		catch (tf2::TransformException & __ex)
 		{
 			ROS_WARN("%s", __ex.what());
-			ros::Duration(1.0).sleep();
 			return false;
 		}
 	}

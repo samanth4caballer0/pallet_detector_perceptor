@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <vector>
 #include <map>
-#include <cmath>
 #include <cctype>
 
 // EIGEN
@@ -24,7 +23,7 @@
 #include <visualization_msgs/Marker.h>
 
 // PCL
-#include <pcl/filters/crop_box.h>
+#include "detectors/color_in_roi_detector.h"
 
 // DUNA
 #include <target_detector/DetectorEnable.h>
@@ -33,15 +32,6 @@
 namespace TargetDetector
 {
 
-// color space HSV
-struct HSV {
-    float h; // 0–360
-    float s; // 0–1
-    float v; // 0–1
-};
-
-
-// Base class for all detectors
 class ColorInRoiPerceptor
 {
 	protected:
@@ -57,7 +47,9 @@ class ColorInRoiPerceptor
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, Eigen::Isometry3d> T_robot_to_sensor__;
+		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot__;
+
+		Detectors::ColorInRoiDetector detector__;
 
 		bool enabled__ = false;
 		bool vizbose__ = false;
@@ -68,7 +60,6 @@ class ColorInRoiPerceptor
 		Eigen::Vector4f crop_min__;
 		int min_cloud_points__ = 1000;
 		int min_color_inliers_points__ = 100;
-		std::map<uint8_t, float> color_tag_to_hue__;
 
 	public:
 
@@ -91,8 +82,6 @@ class ColorInRoiPerceptor
 
 		bool saveSensorTransform(const std_msgs::Header & __header);
 		bool parseColorCode(const std::string & __color_name, uint8_t & __color_code) const;
-		float normalizeHue(float __hue_deg) const;
-		float circularHueDistance(float __first_hue_deg, float __second_hue_deg) const;
 
 		template <typename T>
 		bool getParamOrFail(const std::string & __name, T& __variable)
@@ -104,8 +93,6 @@ class ColorInRoiPerceptor
 			}
 			return true;
 		};
-
-		HSV rgbToHsv(uint8_t r, uint8_t g, uint8_t b);
 
 }; // end of class
 

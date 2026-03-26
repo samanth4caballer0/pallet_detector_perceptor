@@ -31,6 +31,7 @@ class BaselinePairPerceptor
 		bool vizbose__ = false;
 		visualization_msgs::Marker marker__;
 
+		std::string robot_frame__;
 		double baseline_tolerance__ = 0.0;
 		double baseline__ = 0.0;
 

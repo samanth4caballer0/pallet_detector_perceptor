@@ -28,7 +28,6 @@ class ReflectorPerceptor
 		ros::NodeHandle nh__;
 		std::string perceptor_name__;
 
-		std::map<std::string, target_detector::Detections> last_detections__;
 		ros::Publisher detections_publisher__;
 		target_detector::Detection detection__;
 		target_detector::Detections detections__;
@@ -57,8 +56,7 @@ class ReflectorPerceptor
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
-		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot_tf__;
-		std::map<std::string, Eigen::Isometry2d> T_robot_to_sensor_2d__;
+		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot__;
 
 	public:
 
