@@ -29,12 +29,14 @@ class ReflectorPerceptor
 		std::string perceptor_name__;
 
 		ros::Publisher detections_publisher__;
+		ros::Publisher detections_sensor_frame_publisher__;
 		target_detector::Detection detection__;
 		target_detector::Detections detections__;
 		ros::Duration max_detection_age__ = ros::Duration(0.5);
 
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
+		bool publish_sensor_frame_detections__ = false;
 		std::vector<ros::Subscriber> lidar_subscribers__;
 		std::map<std::string, unsigned int> scan_decimation_counter__;
 

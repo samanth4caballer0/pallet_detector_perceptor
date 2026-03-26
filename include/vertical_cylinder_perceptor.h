@@ -29,6 +29,7 @@ class VerticalCylinderPerceptor
 
 		ros::Subscriber point_cloud_subscriber__;
 		ros::Publisher detections_publisher__;
+		ros::Publisher detections_sensor_frame_publisher__;
 		ros::Publisher point_cloud_publisher__;
 		ros::Publisher viz_markers_publisher__;
 		ros::ServiceServer enable_server__;
@@ -40,6 +41,7 @@ class VerticalCylinderPerceptor
 		Detectors::VerticalCylinderDetector detector__;
 
 		bool enabled__ = false;
+		bool publish_sensor_frame_detections__ = false;
 		bool vizbose__ = false;
 		double active_diameter__ = 0.0;
 		double default_diameter__ = 0.0;

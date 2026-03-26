@@ -41,6 +41,7 @@ class ColorInRoiPerceptor
 
 		ros::Subscriber point_cloud_subscriber__;
 		ros::Publisher detections_publisher__;
+		ros::Publisher detections_sensor_frame_publisher__;
 		ros::Publisher point_cloud_publisher__;
 		ros::Publisher viz_markers_publisher__;
 		ros::ServiceServer enable_server__;
@@ -52,6 +53,7 @@ class ColorInRoiPerceptor
 		Detectors::ColorInRoiDetector detector__;
 
 		bool enabled__ = false;
+		bool publish_sensor_frame_detections__ = false;
 		bool vizbose__ = false;
 		std::string robot_frame__;
 		std::string source_name__;

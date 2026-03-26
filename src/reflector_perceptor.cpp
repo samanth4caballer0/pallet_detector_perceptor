@@ -27,6 +27,8 @@ bool ReflectorPerceptor::init()
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
 	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__ = nh__.advertise<target_detector::Detections>("detections_sensor_frame", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &ReflectorPerceptor::enableCallback, this);
 
 	detector__ = std::make_unique<Detectors::ReflectorDetector>();
@@ -104,6 +106,11 @@ void ReflectorPerceptor::processScan(
 		__reflector_hits);
 
 	// fill detections msg
+	target_detector::Detections detections_in_sensor;
+	detections_in_sensor.header = __header;
+	detections_in_sensor.detections.clear();
+	detections_in_sensor.source_name = __source_name;
+
 	detections__.header = __header;
 	detections__.header.frame_id = robot_frame__;
 	detections__.detections.clear();
@@ -121,10 +128,23 @@ void ReflectorPerceptor::processScan(
 		pose_in_sensor.orientation.z = 0.0;
 		pose_in_sensor.orientation.w = 1.0;
 
+		target_detector::Detection detection_in_sensor = detection__;
+		detection_in_sensor.pose.pose = pose_in_sensor;
+		for ( auto & covariance_value : detection_in_sensor.pose.covariance )
+			covariance_value = 0.0;
+		detection_in_sensor.pose.covariance[0] = detected_reflector.covariance_xx;
+		detection_in_sensor.pose.covariance[7] = detected_reflector.covariance_yy;
+		detection_in_sensor.intensity = detected_reflector.intensity;
+		detection_in_sensor.supports = detected_reflector.supports;
+		detections_in_sensor.detections.push_back(detection_in_sensor);
+
 		// Full transform from sensor frame into robot frame.
 		geometry_msgs::Pose pose_in_robot;
 		tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__header.frame_id]);
-		detection__.pose.pose = pose_in_robot;
+		target_detector::Detection detection_in_robot = detection_in_sensor;
+		detection_in_robot.pose.pose = pose_in_robot;
+		for ( auto & covariance_value : detection_in_robot.pose.covariance )
+			covariance_value = 0.0;
 
 		// now covariance:
 		// 1. Create the 3x3 local covariance matrix for translational uncertainty
@@ -144,18 +164,15 @@ void ReflectorPerceptor::processScan(
 		{
 			for (int j = 0; j < 3; ++j)
 			{
-				detection__.pose.covariance[i * 6 + j] = cov_robot_3d(i, j);
+				detection_in_robot.pose.covariance[i * 6 + j] = cov_robot_3d(i, j);
 			}
 		}
-
-		// fill intensity and supports
-		detection__.intensity = detected_reflector.intensity;
-		detection__.supports = detected_reflector.supports;
-
-		detections__.detections.push_back(detection__);
+		detections__.detections.push_back(detection_in_robot);
 	}
 
 	// publish current detections
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__.publish(detections_in_sensor);
 	detections_publisher__.publish(detections__);
 	if (vizbose__)
 		publishMarkers(detections__, __source_name);
@@ -205,6 +222,7 @@ bool ReflectorPerceptor::configureParameters()
 
 	// common parameters
 	return	getParamOrFail("enabled_by_default", enabled__) &&
+			getParamOrFail("publish_sensor_frame_detections", publish_sensor_frame_detections__) &&
 			getParamOrFail("vizbose", vizbose__) &&
 			getParamOrFail("lidars", lidars__) &&
 			getParamOrFail("reflector_size", reflector_size__) &&

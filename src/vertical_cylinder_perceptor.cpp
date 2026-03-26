@@ -23,6 +23,8 @@ bool VerticalCylinderPerceptor::init()
 
 	enable_server__ = nh__.advertiseService("enable", &VerticalCylinderPerceptor::enableServiceCallback, this);
 	detections_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__ = nh__.advertise<target_detector::Detections>("detections_sensor_frame", 1, false);
 
 	if ( enabled__ )
 		subscribeToData();
@@ -45,6 +47,7 @@ bool VerticalCylinderPerceptor::configureParameters()
 	std::vector<double> voxel_size;
 
 	if ( !getParamOrFail("enabled_by_default", enabled__) ||
+		!getParamOrFail("publish_sensor_frame_detections", publish_sensor_frame_detections__) ||
 		!getParamOrFail("vizbose", vizbose__) ||
 		!getParamOrFail("robot_frame", robot_frame__) ||
 		!getParamOrFail("source_name", source_name__) ||
@@ -199,16 +202,26 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	geometry_msgs::Pose pose_in_robot;
 	tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__cloud_in->header.frame_id]);
 
+	target_detector::Detections detections_in_sensor;
+	detections_in_sensor.header = __cloud_in->header;
+	detections_in_sensor.source_name = source_name__;
+	detections_in_sensor.detections.resize(1);
+	detections_in_sensor.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
+	detections_in_sensor.detections[0].pose.pose = pose_in_sensor;
+	detections_in_sensor.detections[0].pose.covariance[0] = -1.0;
+	detections_in_sensor.detections[0].intensity = 0.0;
+	detections_in_sensor.detections[0].radius = 0.5 * active_diameter__;
+	detections_in_sensor.detections[0].supports = cloud_detection->size();
+
 	detections_msg.header = __cloud_in->header;
 	detections_msg.header.frame_id = robot_frame__;
 	detections_msg.source_name = source_name__;
 	detections_msg.detections.resize(1);
-	detections_msg.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
+	detections_msg.detections[0] = detections_in_sensor.detections[0];
 	detections_msg.detections[0].pose.pose = pose_in_robot;
-	detections_msg.detections[0].pose.covariance[0] = -1.0;
-	detections_msg.detections[0].intensity = 0.0;
-	detections_msg.detections[0].radius = 0.5 * active_diameter__;
-	detections_msg.detections[0].supports = cloud_detection->size();
+
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__.publish(detections_in_sensor);
 	detections_publisher__.publish(detections_msg);
 
 	if ( vizbose__ )
@@ -217,16 +230,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 		point_cloud_publisher__.publish(cloud_detection);
 
 		// publish viz marker
-		detections_msg.header = __cloud_in->header; // in this case keeps sensor frame id
-		detections_msg.source_name = source_name__;
-		detections_msg.detections.resize(1);
-		detections_msg.detections[0].type = target_detector::Detection::VERTICAL_CYLINDER;
-		detections_msg.detections[0].pose.pose = pose_in_sensor;
-		detections_msg.detections[0].pose.covariance[0] = -1.0;
-		detections_msg.detections[0].intensity = 0.0;
-		detections_msg.detections[0].radius = 0.5 * active_diameter__;
-		detections_msg.detections[0].supports = cloud_detection->size();
-		publishMarkers(detections_msg);
+		publishMarkers(detections_in_sensor);
 	}
 }
 

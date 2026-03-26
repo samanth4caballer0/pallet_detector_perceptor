@@ -38,6 +38,8 @@ bool AlvarPerceptor::init()
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
 	detections_out_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__ = nh__.advertise<target_detector::Detections>("detections_sensor_frame", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &AlvarPerceptor::enableCallback, this);
 
 	return true;
@@ -60,10 +62,14 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 	}
 
 	// Out message, keep the time stamp from the original header
-	target_detector::Detections detections;
-	detections.header = __bundles.markers.front().header;
-	detections.header.frame_id = robot_frame__;
-	detections.source_name = "ar_track_alvar";
+	target_detector::Detections detections_in_sensor;
+	detections_in_sensor.header = __bundles.markers.front().header;
+	detections_in_sensor.source_name = "ar_track_alvar";
+
+	target_detector::Detections detections_in_robot;
+	detections_in_robot.header = __bundles.markers.front().header;
+	detections_in_robot.header.frame_id = robot_frame__;
+	detections_in_robot.source_name = detections_in_sensor.source_name;
 
 	// transform each alvar marker from camera frame to robot frame
 	double range; // range in the camera xy plane, assumes camera x pointing forward and y pointing left
@@ -150,22 +156,34 @@ void AlvarPerceptor::detectionsInCallback(const ar_track_alvar_msgs::AlvarMarker
 		geometry_msgs::Pose pose_in_robot;
 		tf2::doTransform(pose_in_sensor, pose_in_robot, sensor_to_robot_transform);
 
-		detection__.id = bundle.id;
-		detection__.pose.pose = pose_in_robot;
-		for ( auto & covariance_value : detection__.pose.covariance )
+		target_detector::Detection detection_in_sensor = detection__;
+		detection_in_sensor.id = bundle.id;
+		detection_in_sensor.pose.pose = pose_in_sensor;
+		for ( auto & covariance_value : detection_in_sensor.pose.covariance )
 			covariance_value = 0.0;
-		detection__.pose.covariance[0] = Covariance_xy_robot(0,0); // Cxx
-		detection__.pose.covariance[1] = Covariance_xy_robot(0,1); // Cxy
-		detection__.pose.covariance[6] = Covariance_xy_robot(1,0); // Cyx
-		detection__.pose.covariance[7] = Covariance_xy_robot(1,1); // Cyy
+		detection_in_sensor.pose.covariance[0] = Covariance_xy_camera(0,0); // Cxx
+		detection_in_sensor.pose.covariance[1] = Covariance_xy_camera(0,1); // Cxy
+		detection_in_sensor.pose.covariance[6] = Covariance_xy_camera(1,0); // Cyx
+		detection_in_sensor.pose.covariance[7] = Covariance_xy_camera(1,1); // Cyy
+		detections_in_sensor.detections.push_back(detection_in_sensor);
 
-		detections.detections.push_back(detection__);
+		target_detector::Detection detection_in_robot = detection_in_sensor;
+		detection_in_robot.pose.pose = pose_in_robot;
+		for ( auto & covariance_value : detection_in_robot.pose.covariance )
+			covariance_value = 0.0;
+		detection_in_robot.pose.covariance[0] = Covariance_xy_robot(0,0); // Cxx
+		detection_in_robot.pose.covariance[1] = Covariance_xy_robot(0,1); // Cxy
+		detection_in_robot.pose.covariance[6] = Covariance_xy_robot(1,0); // Cyx
+		detection_in_robot.pose.covariance[7] = Covariance_xy_robot(1,1); // Cyy
+		detections_in_robot.detections.push_back(detection_in_robot);
 	}
 
-	detections_out_publisher__.publish(detections);
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__.publish(detections_in_sensor);
+	detections_out_publisher__.publish(detections_in_robot);
 
 	if ( vizbose__ )
-		publishMarkers(detections);
+		publishMarkers(detections_in_robot);
 }
 
 bool AlvarPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -195,6 +213,7 @@ bool AlvarPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 	return	getParamOrFail("enabled_by_default", enabled__) &&
+			getParamOrFail("publish_sensor_frame_detections", publish_sensor_frame_detections__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
 			getParamOrFail("vizbose", vizbose__);
 }

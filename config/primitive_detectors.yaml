@@ -1,6 +1,7 @@
 small_reflectors: # same as node namespace
   type: reflector # type here is only informative, but should be in consonance with node in launch, i.e.: reflector_perceptor type
   enabled_by_default: true
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
@@ -13,6 +14,7 @@ small_reflectors: # same as node namespace
 big_reflectors:
   type: reflector
   enabled_by_default: true
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
@@ -25,18 +27,21 @@ big_reflectors:
 alvars:
   type: alvar
   enabled_by_default: true # bundle processing by ar_track_alvar is enabled/disabled accordingly
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
 
 beacons:
   type: tmk_uwb
   enabled_by_default: true
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
 
 vertical_cylinders:
   type: vertical_cylinder
   enabled_by_default: true # useful to test with rosbags, to avoid enabling from another terminal
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
   source_name: "camera"
@@ -49,6 +54,7 @@ vertical_cylinders:
 color_in_roi:
   type: color_in_roi
   enabled_by_default: true # useful to test with rosbags, to avoid enabling from another terminal
+  publish_sensor_frame_detections: false
   vizbose: true
   robot_frame: "platform"
   source_name: "camera"

@@ -27,6 +27,8 @@ bool TmkUwbPerceptor::init()
 	tf_listener__.reset(new tf2_ros::TransformListener(tf_buffer__));
 
 	detections_out_publisher__ = nh__.advertise<target_detector::Detections>("detections", 1, false);
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__ = nh__.advertise<target_detector::Detections>("detections_sensor_frame", 1, false);
 	enable_server__ = nh__.advertiseService("enable", &TmkUwbPerceptor::enableCallback, this);
 
 	return true;
@@ -46,10 +48,14 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 	}
 
 	// Out message, keep the time stamp from the original header
-	target_detector::Detections detections;
-	detections.header = __msg.header;
-	detections.header.frame_id = robot_frame__;
-	detections.source_name = "tmk_uwb_" + std::to_string(__msg.anchor_id);
+	target_detector::Detections detections_in_sensor;
+	detections_in_sensor.header = __msg.header;
+	detections_in_sensor.source_name = "tmk_uwb_" + std::to_string(__msg.anchor_id);
+
+	target_detector::Detections detections_in_robot;
+	detections_in_robot.header = __msg.header;
+	detections_in_robot.header.frame_id = robot_frame__;
+	detections_in_robot.source_name = detections_in_sensor.source_name;
 
 	// Transform each tmk_uwb measurement from sensor frame to robot frame
 	// Assumes radio beacons both onboard and landmarks mounted with z axis pointing down, so invert the sign at azimuth and cp_azimuth
@@ -65,15 +71,22 @@ void TmkUwbPerceptor::detectionsInCallback(const tmk_uwb::UwbMeasurement & __msg
 	geometry_msgs::Pose pose_in_robot;
 	tf2::doTransform(pose_in_sensor, pose_in_robot, T_sensor_to_robot__[__msg.header.frame_id]);
 
-	// convert to detection
-	detection__.id = __msg.anchor_id;
-	detection__.pose.pose = pose_in_robot;
-	detections.detections.push_back(detection__);
+	// convert to detections
+	target_detector::Detection detection_in_sensor = detection__;
+	detection_in_sensor.id = __msg.anchor_id;
+	detection_in_sensor.pose.pose = pose_in_sensor;
+	detections_in_sensor.detections.push_back(detection_in_sensor);
 
-	detections_out_publisher__.publish(detections);
+	target_detector::Detection detection_in_robot = detection_in_sensor;
+	detection_in_robot.pose.pose = pose_in_robot;
+	detections_in_robot.detections.push_back(detection_in_robot);
+
+	if ( publish_sensor_frame_detections__ )
+		detections_sensor_frame_publisher__.publish(detections_in_sensor);
+	detections_out_publisher__.publish(detections_in_robot);
 
 	if ( vizbose__ )
-		publishMarkers(detections);
+		publishMarkers(detections_in_robot);
 }
 
 bool TmkUwbPerceptor::enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response)
@@ -101,6 +114,7 @@ bool TmkUwbPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 	return	getParamOrFail("enabled_by_default", enabled__) &&
+			getParamOrFail("publish_sensor_frame_detections", publish_sensor_frame_detections__) &&
 			getParamOrFail("robot_frame", robot_frame__) &&
 			getParamOrFail("vizbose", vizbose__);
 }

@@ -26,11 +26,13 @@ class TmkUwbPerceptor
 		std::string perceptor_name__;
 
 		ros::Publisher detections_out_publisher__;
+		ros::Publisher detections_sensor_frame_publisher__;
 		target_detector::Detection detection__;
 		target_detector::Detections detections__;
 
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
+		bool publish_sensor_frame_detections__ = false;
 		ros::Subscriber detections_in_subscriber__;
 
 		ros::Publisher markers_publisher__;
