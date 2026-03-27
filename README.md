@@ -122,7 +122,7 @@ Type color_in_roi:
 - vizbose (bool)
 - robot_frame (string)
 - source_name (string)
-- default_color (string) -> boot-time target color, one of `red`, `green`, `blue`, `unknown`
+- default_color (string) -> boot-time target color, one of `red`, `green`, `blue`, `unknown` (`any` in action-side requests maps to `unknown`)
 - red_hue_center_deg (double) -> hue center for the red bucket
 - green_hue_center_deg (double) -> hue center for the green bucket
 - blue_hue_center_deg (double) -> hue center for the blue bucket
@@ -157,7 +157,7 @@ For `color_in_roi`, `enable=true` should provide the requested color in the `col
 
 For `color_in_roi`, `default_color` is only the boot-time target color used before the first enable request overrides it. The yaml parser accepts `red`, `green`, `blue` and `unknown`, case-insensitively.
 
-If `enabled_by_default` is true and `default_color` is `unknown`, the node starts subscribed and processing input, but it will not publish positive color detections at startup. This is because the classifier only produces red, green or blue buckets, and a concrete color must later be set through the enable service for detections to be published.
+If `enabled_by_default` is true and `default_color` is `unknown`, the node starts subscribed and processing input and will publish whichever of red, green or blue wins the ROI classification. This wildcard behavior is also what the action-side `color="any"` alias uses.
 
 If `enabled_by_default` is false, `default_color` is mostly a startup placeholder, because the first enable request sets the active target color.
 

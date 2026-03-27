@@ -168,7 +168,10 @@ void ColorInRoiPerceptor::pointCloudCallback(const sensor_msgs::PointCloud2Const
 	if ( !detection_found )
 		return;
 
-	if ( detection_in_sensor.detected_color != target_color__ )
+	// UNKNOWN acts as a wildcard target so a single detector instance can report
+	// whichever of red/green/blue wins the ROI classification.
+	if ( target_color__ != target_detector::Color::UNKNOWN &&
+		detection_in_sensor.detected_color != target_color__ )
 		return;
 
 	geometry_msgs::Pose pose_in_robot;
