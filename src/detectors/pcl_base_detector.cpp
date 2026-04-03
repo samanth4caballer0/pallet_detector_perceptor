@@ -64,6 +64,27 @@ void PclBaseDetector::computeNormals(
 	normal_computer.compute(*__cloud_out);
 }
 
+void PclBaseDetector::projectToXYPlane(
+	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out)
+{
+	__cloud_out->reserve(__cloud_in->size());
+	pcl::PointXYZ p_xy_plane;
+	for (const auto& p_in : __cloud_in->points)
+	{
+
+		p_xy_plane.x = p_in.z;
+		p_xy_plane.y = p_in.x;
+		p_xy_plane.z = 0.0f;  // Flatten onto XY plane
+		__cloud_out->points.push_back(p_xy_plane);
+	}
+	__cloud_out->width = __cloud_out->points.size();
+	__cloud_out->height = 1;
+	__cloud_out->header = __cloud_in->header;
+	__cloud_out->is_dense = __cloud_in->is_dense;
+}
+
+
 unsigned int PclBaseDetector::correlation(
 	const std::vector<double> & __data,
 	const std::vector<double> & __kernel)

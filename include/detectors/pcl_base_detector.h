@@ -77,6 +77,11 @@ class PclBaseDetector
 			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
 			pcl::PointCloud<pcl::Normal>::Ptr __cloud_out);
 
+		// flatten input cloud onto horizontal plane (assumed ZX), and sets output at XY plane
+		virtual void projectToXYPlane(
+			pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
+			pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out);
+
 		// Returns the data vector index of maximum correlation between __data and __kernel
 		virtual unsigned int correlation(
 			const std::vector<double> & __data,

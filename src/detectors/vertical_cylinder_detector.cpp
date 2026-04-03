@@ -48,6 +48,63 @@ bool VerticalCylinderDetector::detect(
 	if ( !std::isfinite(__param) || __param <= 0.0 ) return false;
     if ( __cloud_in->empty() ) return false;
 
+	// flatten to horizontal plane (from ZX to XY)
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_projected(new pcl::PointCloud<pcl::PointXYZ>());
+	projectToXYPlane(__cloud_in, cloud_projected);
+
+	// find circle in the XY plane
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_CIRCLE2D);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setDistanceThreshold(0.02);
+    seg.setMaxIterations(1000);
+	seg.setRadiusLimits(__param*0.98, __param*1.02);
+    seg.setInputCloud(cloud_projected);
+    seg.segment(*inliers, *coefficients);
+
+	// check if enough inliers.
+	if ( inliers->indices.size() < 10 ) return false;
+
+	// extract cylinder points (inliers)
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(__cloud_in);
+    extract.setIndices(inliers);
+    extract.setNegative(false);
+    extract.filter(*__cloud_out);
+
+	// compute cylinder pose. Model coefficients: [0-2]: point on axis, [3-5]: axis direction
+	Eigen::Vector3d target_point(coefficients->values[1], 0, coefficients->values[0]); //point at camera height (y=0)
+  	Eigen::Vector3d target_x_axis = -target_point; // x of the cylinder always pointing to the camera
+  	target_x_axis.normalize();
+  	Eigen::Vector3d target_z_axis(0,-1,0); // forces gravity constraint, assumes camera Y pointing down
+	Eigen::Vector3d target_y_axis = target_z_axis.cross(target_x_axis);
+	__T_O_C = Eigen::Isometry3d::Identity();
+	__T_O_C.linear().block<3,1>(0,0) = target_x_axis;
+	__T_O_C.linear().block<3,1>(0,1) = target_y_axis;
+	__T_O_C.linear().block<3,1>(0,2) = target_z_axis;
+	__T_O_C.translation() = target_point;
+  	//std::cout << std::endl << __T_O_C.matrix() << std::endl;
+	//std::cout << "Center (x, y): ("<< coefficients->values[0] << ", " << coefficients->values[1] << ")" << std::endl;
+	//std::cout << "Radius: " << coefficients->values[2] << std::endl;
+
+	return true;
+}
+
+/*bool VerticalCylinderDetector::detect(
+	const double & __param,
+	pcl::PointCloud<pcl::PointXYZ>::ConstPtr __cloud_in,
+	pcl::PointCloud<pcl::PointXYZ>::Ptr __cloud_out,
+	Eigen::Isometry3d & __T_O_C, // object wrt the camera (Check if better Affine3d ??)
+	double & __confidence_level,
+	const bool & __vizbose)
+{
+	// basic checks
+	if ( !std::isfinite(__param) || __param <= 0.0 ) return false;
+    if ( __cloud_in->empty() ) return false;
+
     // estimate normals
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
@@ -147,6 +204,6 @@ bool VerticalCylinderDetector::detect(
 
 	// the end
 	return true;
-}
+}*/
 
 } // end of namespace

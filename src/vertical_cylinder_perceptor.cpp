@@ -160,6 +160,7 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_downsampled(new pcl::PointCloud<pcl::PointXYZ>());
+	//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_projected(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_detection(new pcl::PointCloud<pcl::PointXYZ>());
 	Eigen::Isometry3d T_object_in_sensor = Eigen::Isometry3d::Identity();
 	double confidence_level = 0.0;
@@ -167,6 +168,11 @@ void VerticalCylinderPerceptor::pointCloudCallback(const sensor_msgs::PointCloud
 	pcl::fromROSMsg(*__cloud_in, *cloud_in);
 	detector__.crop(crop_max__, crop_min__, cloud_in, cloud_crop);
 	detector__.voxelDownsampling(voxel_size__, cloud_crop, cloud_downsampled);
+	//detector__.projectToXYPlane(cloud_downsampled, cloud_projected);
+
+	// debugging
+	//point_cloud_publisher__.publish(cloud_projected);
+	//return;
 
 	const bool detection_found = detector__.detect(
 		0.5 * active_diameter__,
