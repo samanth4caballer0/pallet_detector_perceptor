@@ -61,12 +61,13 @@ bool VerticalCylinderDetector::detect(
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setDistanceThreshold(0.02);
     seg.setMaxIterations(1000);
-	seg.setRadiusLimits(__param*0.98, __param*1.02);
+	seg.setRadiusLimits(__param-0.05, __param+0.05); // 5cm radius tolerance
     seg.setInputCloud(cloud_projected);
     seg.segment(*inliers, *coefficients);
 
 	// check if enough inliers.
-	if ( inliers->indices.size() < 10 ) return false;
+	//std::cout << "inliers: " << inliers->indices.size() << std::endl;
+	if ( inliers->indices.size() < 200 ) return false;
 
 	// extract cylinder points (inliers)
     pcl::ExtractIndices<pcl::PointXYZ> extract;
