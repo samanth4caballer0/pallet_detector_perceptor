@@ -1,8 +1,8 @@
 # Overview
 
-ROS "front-end" for object/marker detectors such as reflectors, alvars, columns and combinations of those.
-We can launch detections of two types:
+ROS front-end for object and marker detectors such as reflectors, ALVAR bundles, UWB anchors, vertical cylinders, and color cues in a point-cloud ROI.
 
+<<<<<<< HEAD
 - Primitive detections: those arising from a sensor source. Available now:
 	- Reflectors from lidar intensity
 	- Columns from lidar scans
@@ -10,53 +10,65 @@ We can launch detections of two types:
 	- TMK UWB measurements
 	- Vertical cylinders from point clouds
 	- Color in a ROI from point clouds
+=======
+Two detector families are supported:
+>>>>>>> update readme
 
-- Composite detections: patterns of detections (patterns of primitive detections in general, but could be of composite detections as well). Available now:
-	- Baseline pair: finds detections that are separated a given baseline. Example: docking reflector pairs.
+- Primitive detections: detections that come directly from a sensor source.
+- Composite detections: detections built from other detections.
 
-Primitive detectors subscribe to some sensor source (i.e. lidar scan, camera stream, ar_track_alvar output).
+Available detector types:
 
-# Launch
+- Primitive:
+  - `reflector`
+  - `alvar`
+  - `tmk_uwb`
+  - `vertical_cylinder`
+  - `color_in_roi`
+- Composite:
+  - `baseline_pair`
 
-To launch detectors you need to:
+The ROS nodes are called `*_perceptor` because the word detector is reserved for the C++ classes that perform the actual detection work.
 
-- Define them in a yaml file, giving a name to each detector
-- Add them to a launch file, using the detector name as the namespace
+# Launch And Configuration
 
-Example:
+Each detector instance is defined by a namespace. The same namespace must exist:
 
-In the yaml file:
+- in YAML, where detector parameters are stored
+- in launch, where the corresponding perceptor node is started
+
+Example reflector detector:
 
 ```yaml
-small_reflectors: # same as node namespace
-  type: reflector # type here is only informative, but should be in consonance with node in launch, i.e.: reflector_perceptor type
+reflectors:
+  type: reflector
   enabled_by_default: true
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
-  min_reflector_intensity: 250
+  scan_type: "sensor_msgs/LaserScan" # or sick_safetyscanners/ExtendedLaserScanMsg
+  min_reflector_intensity: 250        # only used for sensor_msgs/LaserScan
   reflector_size: 0.04
   max_detection_range: 20
-  rate: 5.0
+  scan_decimation: 5
+  override_support_points: 0          # 0 keeps the adaptive threshold, any other value forces that exact minimum support count
 ```
 
-In the launch file:
-
 ```xml
-<group ns="small_reflectors">
-	<node
-		pkg="target_detector"
-		type="reflector_perceptor"
-		name="perceptor"
-		output="screen" >
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		<remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
-		<remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
-	</node>
+<group ns="reflectors">
+  <node
+    pkg="target_detector"
+    type="reflector_perceptor"
+    name="perceptor"
+    output="screen">
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+    <remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
+    <remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
+  </node>
 </group>
 ```
 
-For yaml files, the available types now are:
+Detector type to node mapping:
 
 - Primitive:
 	- reflector
@@ -78,12 +90,15 @@ So in the launch files, you can use the following corresponding node types:
 - color_in_roi_perceptor
 - baseline_pair_perceptor
 
-The nodes are called perceptors because the detectors word is reserved for the c++ classes that actually contain the code that detects stuff.
-
-
 # Frames
 
-The published detections are referenced to the platform frame. The X axis of the detected target object (marker, ...) is normal to the target object surface, pointing to the observer. The Z axis of the detected object is pointing up from the object, and the Y axis fulfills the right hand rule Z x X = Y.
+Published detections are referenced to `robot_frame` (typically `platform`).
+
+The target pose convention is:
+
+- X axis points normal to the target surface, towards the observer
+- Z axis points up from the object
+- Y axis follows the right-hand rule: `Z x X = Y`
 
 # ROS API
 
@@ -190,29 +205,186 @@ If needed, a tracker can be launched alongside a perceptor, and that tracker wil
 
 ```xml
 <group ns="docking_pairs">
+  <node
+    pkg="target_detector"
+    type="baseline_pair_perceptor"
+    name="perceptor"
+    output="screen">
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+    <remap from="detections_in" to="/$(arg robot_id)/perception/reflectors/detections"/>
+  </node>
 
-	<node
-		pkg="target_detector"
-		type="baseline_pair_perceptor"
-		name="perceptor"
-		output="screen" >
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		<remap from="detections_in" to="/$(arg robot_id)/perception/small_reflectors/detections"/>
-	</node>
-
-	<node
-		pkg="target_tracker"
-		type="target_tracker"
-		name="tracker"
-		output="screen" >
-		<remap from="odom" to="/$(arg robot_id)/odom"/>
-		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-	</node>
-
+  <node
+    pkg="target_tracker"
+    type="target_tracker"
+    name="tracker"
+    output="screen">
+    <remap from="odom" to="/$(arg robot_id)/odom"/>
+    <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+  </node>
 </group>
 ```
 
-## Reference
+# How Units Use It
 
-See duna config and launch for more info on remapping, namespacing, and tracking of those detections. In particular, see how Detect and Track actions in BT trees now have parameters for detector name and type.
+The package-local launch files are minimal examples. The current robot stacks in this repo are better references for real usage.
+
+## `abc_rides`
+
+`abc_rides` uses:
+
+- `reflectors` from one `sick_safetyscanners/ExtendedLaserScanMsg` stream
+- `docking_pairs` as a composite detector over reflector detections
+- `beacons` from TMK UWB measurements
+
+Config example:
+
+```yaml
+reflectors:
+  type: reflector
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar"]
+  scan_type: "sick_safetyscanners/ExtendedLaserScanMsg"
+  reflector_size: 0.02
+  max_detection_range: 10
+  scan_decimation: 1
+  override_support_points: 2
+
+beacons:
+  type: tmk_uwb
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+```
+
+Launch wiring:
+
+```xml
+<group ns="perception">
+  <rosparam file="$(arg unit_path)/config/perception/primitive_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/composite_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/trackers.yaml" command="load"/>
+
+  <group ns="reflectors">
+    <node pkg="target_detector" type="reflector_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="lidar" to="/$(arg robot_id)/devices/lidar/extended_laser_scan"/>
+    </node>
+  </group>
+
+  <group ns="docking_pairs">
+    <node pkg="target_detector" type="baseline_pair_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="detections_in" to="/$(arg robot_id)/perception/reflectors/detections"/>
+    </node>
+  </group>
+
+  <group ns="beacons">
+    <node pkg="target_detector" type="tmk_uwb_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="detections_in" to="/$(arg robot_id)/devices/onboard_beacon/uwb_measurements"/>
+    </node>
+  </group>
+</group>
+```
+
+`abc_rides/trees/dock_extended.xml` enables `docking_pairs` with a runtime reflector baseline before tracking and docking.
+
+## `electro_jet`
+
+`electro_jet` loads a model-specific primitive detector file with `$(arg robot_model)_primitive_detectors.yaml`. The current `robogripper` and `robohook` configs use:
+
+- `reflectors`
+- `docking_pairs`
+- `barrels`
+- `colored_small_barrels`
+
+Config example:
+
+```yaml
+reflectors:
+  type: reflector
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_top"]
+  scan_type: "sensor_msgs/LaserScan"
+  min_reflector_intensity: 600
+  reflector_size: 0.05
+  max_detection_range: 30
+  scan_decimation: 1
+  override_support_points: 0
+
+barrels:
+  type: vertical_cylinder
+  enabled_by_default: false
+  vizbose: true
+  robot_frame: "platform"
+  source_name: "camera"
+  default_diameter: 0.6
+  min_cloud_points: 1000
+  crop_min: [-0.6, 0.1, 0.4]
+  crop_max: [0.6, 0.6, 1.4]
+  voxel_size: [0.02, 0.02, 0.02]
+
+colored_small_barrels:
+  type: color_in_roi
+  enabled_by_default: false
+  default_color: "red"
+  vizbose: true
+  robot_frame: "platform"
+  source_name: "camera"
+  red_hue_center_deg: 0
+  green_hue_center_deg: 120
+  blue_hue_center_deg: 220
+  crop_min: [-0.1, 0.1, 0.55]
+  crop_max: [0.1, 0.2, 1.0]
+  min_cloud_points: 1000
+  min_color_inliers_points: 100
+```
+
+Launch wiring:
+
+```xml
+<group ns="perception">
+  <rosparam file="$(arg unit_path)/config/perception/$(arg robot_model)_primitive_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/composite_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/trackers.yaml" command="load"/>
+
+  <group ns="reflectors">
+    <node pkg="target_detector" type="reflector_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="lidar_right" to="/$(arg robot_id)/devices/lidar_right/scan"/>
+      <remap from="lidar_left" to="/$(arg robot_id)/devices/lidar_left/scan"/>
+      <remap from="lidar_top" to="/$(arg robot_id)/devices/lidar_top/scan"/>
+    </node>
+  </group>
+
+  <group ns="barrels">
+    <node pkg="target_detector" type="vertical_cylinder_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+      <remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+    </node>
+  </group>
+
+  <group ns="colored_small_barrels">
+    <node pkg="target_detector" type="color_in_roi_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+      <remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+    </node>
+  </group>
+</group>
+```
+
+The launch exposes `lidar_right`, `lidar_left`, and `lidar_top` remaps. The current `robogripper` and `robohook` YAML files select `lidar_top` through the `lidars` parameter.
+
+Runtime examples from the BT trees:
+
+- `electro_jet/trees/dock_reflector_pair.xml` enables `docking_pairs` with `reflector_baseline`
+- `electro_jet/trees/dock_barrel.xml` enables `barrels` with `diameter`
+- `electro_jet/trees/wait_for_color.xml` waits on `colored_small_barrels` with a requested `color`
