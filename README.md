@@ -1,195 +1,398 @@
 # Overview
 
-ROS "front-end" for object/marker detectors such as reflectors, alvars, columns and combinations of those.
-We can launch detections of two types:
+ROS front-end for object and marker detectors such as reflectors, ALVAR bundles, UWB anchors, vertical cylinders, and color cues in a point-cloud ROI.
 
-- Primitive detections: those arising from a sensor source. Available now:
-	- Reflectors from lidar intensity
-	- Alvar bundles (we do not detect single alvars for now, so the simplest alvar detection is a bundle)
-	- TMK UWB measurements
-	- Vertical cylinders from point clouds
-	- Color in a ROI from point clouds
+Two detector families are supported:
 
-- Composite detections: patterns of detections (patterns of primitive detections in general, but could be of composite detections as well). Available now:
-	- Baseline pair: finds detections that are separated a given baseline. Example: docking reflector pairs.
+- Primitive detections: detections that come directly from a sensor source.
+- Composite detections: detections built from other detections.
 
-Primitive detectors subscribe to some sensor source (i.e. lidar scan, camera stream, ar_track_alvar output).
+Available detector types:
 
-# Launch
+- Primitive:
+  - `reflector`
+  - `alvar`
+  - `tmk_uwb`
+  - `vertical_cylinder`
+  - `color_in_roi`
+- Composite:
+  - `baseline_pair`
 
-To launch detectors you need to:
+The ROS nodes are called `*_perceptor` because the word detector is reserved for the C++ classes that perform the actual detection work.
 
-- Define them in a yaml file, giving a name to each detector
-- Add them to a launch file, using the detector name as the namespace
+# Launch And Configuration
 
-Example:
+Each detector instance is defined by a namespace. The same namespace must exist:
 
-In the yaml file:
+- in YAML, where detector parameters are stored
+- in launch, where the corresponding perceptor node is started
+
+Example reflector detector:
 
 ```yaml
-small_reflectors: # same as node namespace
-  type: reflector # type here is only informative, but should be in consonance with node in launch, i.e.: reflector_perceptor type
+reflectors:
+  type: reflector
   enabled_by_default: true
   vizbose: true
   robot_frame: "platform"
   lidars: ["lidar_front", "lidar_back"]
-  min_reflector_intensity: 250
+  scan_type: "sensor_msgs/LaserScan" # or sick_safetyscanners/ExtendedLaserScanMsg
+  min_reflector_intensity: 250        # only used for sensor_msgs/LaserScan
   reflector_size: 0.04
   max_detection_range: 20
-  rate: 5.0
+  scan_decimation: 5
+  override_support_points: 0          # 0 keeps the adaptive threshold, any other value forces that exact minimum support count
 ```
 
-In the launch file:
-
 ```xml
-<group ns="small_reflectors">
-	<node
-		pkg="target_detector"
-		type="reflector_perceptor"
-		name="perceptor"
-		output="screen" >
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		<remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
-		<remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
-	</node>
+<group ns="reflectors">
+  <node
+    pkg="target_detector"
+    type="reflector_perceptor"
+    name="perceptor"
+    output="screen">
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+    <remap from="lidar_front" to="/$(arg robot_id)/devices/lidar_front/scan"/>
+    <remap from="lidar_back" to="/$(arg robot_id)/devices/lidar_back/scan"/>
+  </node>
 </group>
 ```
 
-For yaml files, the available types now are:
+Detector type to node mapping:
 
-- Primitive:
-	- reflector
-	- alvar
-	- tmk_uwb
-	- vertical_cylinder
-	- color_in_roi
-- Composite:
-	- baseline_pair
-
-So in the launch files, you can use the following corresponding node types:
-
-- reflector_perceptor
-- alvar_perceptor
-- tmk_uwb_perceptor
-- vertical_cylinder_perceptor
-- color_in_roi_perceptor
-- baseline_pair_perceptor
-
-The nodes are called perceptors because the detectors word is reserved for the c++ classes that actually contain the code that detects stuff.
-
+- `reflector` -> `reflector_perceptor`
+- `alvar` -> `alvar_perceptor`
+- `tmk_uwb` -> `tmk_uwb_perceptor`
+- `vertical_cylinder` -> `vertical_cylinder_perceptor`
+- `color_in_roi` -> `color_in_roi_perceptor`
+- `baseline_pair` -> `baseline_pair_perceptor`
 
 # Frames
 
-The published detections are referenced to the platform frame. The X axis of the detected target object (marker, ...) is normal to the target object surface, pointing to the observer. The Z axis of the detected object is pointing up from the object, and the Y axis fulfills the right hand rule Z x X = Y.
+Published detections are referenced to `robot_frame` (typically `platform`).
+
+The target pose convention is:
+
+- X axis points normal to the target surface, towards the observer
+- Z axis points up from the object
+- Y axis follows the right-hand rule: `Z x X = Y`
 
 # ROS API
 
 ## Parameters
 
-Type reflector:
-- enabled_by_default (bool)
-- vizbose (bool)
-- robot_frame (string) -> output detections are referenced to this frame
-- lidars (string array for lidar topics)
-- min_reflector_intensity (double)
-- reflector_size (double)
-- max_detection_range (double) -> cut-off distance
-- rate (double) -> detections publish rate
+### `reflector`
 
-Type alvar:
-- enabled_by_default (bool)
-- vizbose (bool)
-- robot_frame (string)
+- `enabled_by_default` (`bool`)
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
+- `lidars` (`string[]`) names of the input scan topics to subscribe to
+- `scan_type` (`string`) one of `sensor_msgs/LaserScan` or `sick_safetyscanners/ExtendedLaserScanMsg`
+- `min_reflector_intensity` (`double`) only used when `scan_type` is `sensor_msgs/LaserScan`
+- `reflector_size` (`double`)
+- `max_detection_range` (`double`)
+- `scan_decimation` (`int`) process one out of every N scans
+- `override_support_points` (`int`) if `0`, the detector computes the minimum support count from reflector geometry and range, with a minimum of 3; if non-zero, that exact value is used as the minimum support count
 
-Type tmk_uwb:
-- enabled_by_default (bool)
-- vizbose (bool)
-- robot_frame (string)
+When `scan_type` is `sick_safetyscanners/ExtendedLaserScanMsg`, the detector uses the reflector-hit flag from the message instead of intensity thresholding.
 
-Type vertical_cylinder:
-- enabled_by_default (bool)
-- vizbose (bool)
-- robot_frame (string)
-- source_name (string)
-- default_diameter (double) -> boot-time diameter, used only when enabled_by_default is true
-- min_cloud_points (int)
-- crop_min (double[3])
-- crop_max (double[3])
-- voxel_size (double[3])
+### `alvar`
 
-Type color_in_roi:
-- enabled_by_default (bool)
-- vizbose (bool)
-- robot_frame (string)
-- source_name (string)
-- default_color (string) -> boot-time target color, one of `red`, `green`, `blue`, `unknown` (`any` in action-side requests maps to `unknown`)
-- red_hue_center_deg (double) -> hue center for the red bucket
-- green_hue_center_deg (double) -> hue center for the green bucket
-- blue_hue_center_deg (double) -> hue center for the blue bucket
-- min_cloud_points (int) -> minimum number of points in the input cloud before any processing
-- min_color_inliers_points (int) -> minimum number of cropped ROI points that must match the winning color to publish a detection
-- crop_min (double[3])
-- crop_max (double[3])
+- `enabled_by_default` (`bool`)
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
 
-Type baseline_pair:
-- vizbose (bool)
-- baseline_tolerance (double)
+The perceptor expects bundle detections from `ar_track_alvar`. Single tags are not detected directly here; the primitive input is an ALVAR bundle message.
 
-Composite detectors can not be enabled by default, since they depend on the enabled state of another detector.
+### `tmk_uwb`
 
-`color_in_roi` currently classifies only three logical colors: red, green and blue. It does this by converting ROI points from RGB to HSV and counting how many points fall near the configured hue center of each bucket. The bucket centers are configurable in yaml, but the detector still publishes one of the three `target_detector/Color` values.
+- `enabled_by_default` (`bool`)
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
 
-## API
+### `vertical_cylinder`
 
-Each perceptor generates:
+- `enabled_by_default` (`bool`)
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
+- `source_name` (`string`)
+- `default_diameter` (`double`) startup diameter, only used when `enabled_by_default` is `true`
+- `min_cloud_points` (`int`)
+- `crop_min` (`double[3]`)
+- `crop_max` (`double[3]`)
+- `voxel_size` (`double[3]`)
 
-- a detections topic where detections are published
-- a visuals topic where markers are publish if vizbose
-- a enable server, to enable/disable the processing. The enable request contains detector-specific fields, and each detector only uses the relevant ones:
-	- `baseline_pair` uses `baseline`
-	- `alvar` uses `alvar_marker_id`
-	- `vertical_cylinder` uses `diameter`
-	- `color_in_roi` uses `color`
+Validation notes:
 
-For vertical cylinders, `enable=true` requires a positive `diameter` in the enable service request. If `enabled_by_default` is true, the detector starts with `default_diameter`.
+- `default_diameter` must be `> 0` when `enabled_by_default=true`
+- `min_cloud_points` must be `>= 1`
+- `crop_min` and `crop_max` must contain exactly 3 elements, with each `crop_min[i] < crop_max[i]`
+- all `voxel_size` components must be `> 0`
 
-For `color_in_roi`, `enable=true` should provide the requested color in the `color` field of `target_detector/DetectorEnable`. The request type is `target_detector/Color`, and published `target_detector/Detection` messages also include a `color` field for color detections.
+### `color_in_roi`
 
-For `color_in_roi`, `default_color` is only the boot-time target color used before the first enable request overrides it. The yaml parser accepts `red`, `green`, `blue` and `unknown`, case-insensitively.
+- `enabled_by_default` (`bool`)
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
+- `source_name` (`string`)
+- `default_color` (`string`) one of `red`, `green`, `blue`, `unknown`
+- `red_hue_center_deg` (`double`)
+- `green_hue_center_deg` (`double`)
+- `blue_hue_center_deg` (`double`)
+- `min_cloud_points` (`int`)
+- `min_color_inliers_points` (`int`)
+- `crop_min` (`double[3]`)
+- `crop_max` (`double[3]`)
 
-If `enabled_by_default` is true and `default_color` is `unknown`, the node starts subscribed and processing input and will publish whichever of red, green or blue wins the ROI classification. This wildcard behavior is also what the action-side `color="any"` alias uses.
+Validation notes:
 
-If `enabled_by_default` is false, `default_color` is mostly a startup placeholder, because the first enable request sets the active target color.
+- `min_cloud_points` must be `>= 1`
+- `min_color_inliers_points` must be `>= 1`
+- `crop_min` and `crop_max` must contain exactly 3 elements, with each `crop_min[i] < crop_max[i]`
 
-## Tracking
+`color_in_roi` classifies three logical colors: red, green, and blue. It converts ROI points from RGB to HSV and counts how many points fall near the configured hue center of each bucket. The bucket centers are configurable in YAML, but the published value is still one of the `target_detector/Color` codes.
 
-If needed, a tracker can be launched alongside a perceptor, and that tracker will only track detections from the companion perceptor. Example:
+### `baseline_pair`
+
+- `vizbose` (`bool`)
+- `robot_frame` (`string`)
+- `baseline_tolerance` (`double`)
+
+Composite detectors cannot be enabled by default because they depend on another detector stream.
+
+## Topics And Services
+
+Each perceptor publishes:
+
+- `detections` (`target_detector/Detections`)
+- `visuals` (`visualization_msgs/Marker`) when `vizbose=true`
+- `enable` (`target_detector/DetectorEnable`)
+
+Detector-specific inputs and extra outputs:
+
+| Type | Input | Extra outputs / notes |
+| --- | --- | --- |
+| `reflector` | subscribes to every topic listed in `lidars` | output `source_name` is the input lidar name |
+| `alvar` | `detections_in` from `ar_track_alvar_msgs/AlvarMarkers` | publishes `bundle_enable_detection` (`std_msgs/Bool`) to drive upstream ALVAR bundle detection |
+| `tmk_uwb` | `detections_in` from `tmk_uwb/UwbMeasurement` | output `source_name` is `tmk_uwb_<anchor_id>` |
+| `vertical_cylinder` | `point_cloud_in` (`sensor_msgs/PointCloud2`) | publishes `cloud_out` when `vizbose=true` |
+| `color_in_roi` | `point_cloud_in` (`sensor_msgs/PointCloud2`) | publishes `cloud_out` when `vizbose=true` |
+| `baseline_pair` | `detections_in` (`target_detector/Detections`) | expects incoming detections already expressed in `robot_frame` |
+
+`DetectorEnable.srv` contains fields for every detector type, but each perceptor only uses the fields relevant to it:
+
+- `reflector`: only `enable`
+- `alvar`: `enable`, `alvar_marker_id`
+- `tmk_uwb`: only `enable`
+- `baseline_pair`: `enable`, `baseline`
+- `vertical_cylinder`: `enable`, `diameter`
+- `color_in_roi`: `enable`, `color`
+
+Runtime notes:
+
+- `baseline_pair` requires a positive `baseline` when enabling.
+- `vertical_cylinder` requires a positive `diameter` when enabling.
+- `color_in_roi` uses the requested `color` from `target_detector/Color`.
+- `default_color` is only the startup target color before the first enable request overrides it.
+- when the active target color is `unknown`, `color_in_roi` acts as a wildcard and publishes whichever of red, green, or blue wins the ROI classification
+- The action-side alias `color="any"` maps to `unknown`.
+
+## Messages
+
+Useful message details:
+
+- `target_detector/Detections` contains `header`, `source_name`, and an array of `target_detector/Detection`
+- `target_detector/Detection` includes detector `type`, `id`, `pose`, `supports`, and detector-specific fields such as `baseline`, `radius`, and `color`
+- `target_detector/Color` uses `UNKNOWN`, `RED`, `GREEN`, and `BLUE`
+
+# Tracking
+
+A tracker can be launched alongside a perceptor and configured to track only that detector stream.
+
+Example:
 
 ```xml
 <group ns="docking_pairs">
+  <node
+    pkg="target_detector"
+    type="baseline_pair_perceptor"
+    name="perceptor"
+    output="screen">
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+    <remap from="detections_in" to="/$(arg robot_id)/perception/reflectors/detections"/>
+  </node>
 
-	<node
-		pkg="target_detector"
-		type="baseline_pair_perceptor"
-		name="perceptor"
-		output="screen" >
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-		<remap from="detections_in" to="/$(arg robot_id)/perception/small_reflectors/detections"/>
-	</node>
-
-	<node
-		pkg="target_tracker"
-		type="target_tracker"
-		name="tracker"
-		output="screen" >
-		<remap from="odom" to="/$(arg robot_id)/odom"/>
-		<remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
-		<remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
-	</node>
-
+  <node
+    pkg="target_tracker"
+    type="target_tracker"
+    name="tracker"
+    output="screen">
+    <remap from="odom" to="/$(arg robot_id)/odom"/>
+    <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+    <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+  </node>
 </group>
 ```
 
-## Reference
+# How Units Use It
 
-See duna config and launch for more info on remapping, namespacing, and tracking of those detections. In particular, see how Detect and Track actions in BT trees now have parameters for detector name and type.
+The package-local launch files are minimal examples. The current robot stacks in this repo are better references for real usage.
+
+## `abc_rides`
+
+`abc_rides` uses:
+
+- `reflectors` from one `sick_safetyscanners/ExtendedLaserScanMsg` stream
+- `docking_pairs` as a composite detector over reflector detections
+- `beacons` from TMK UWB measurements
+
+Config example:
+
+```yaml
+reflectors:
+  type: reflector
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar"]
+  scan_type: "sick_safetyscanners/ExtendedLaserScanMsg"
+  reflector_size: 0.02
+  max_detection_range: 10
+  scan_decimation: 1
+  override_support_points: 2
+
+beacons:
+  type: tmk_uwb
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+```
+
+Launch wiring:
+
+```xml
+<group ns="perception">
+  <rosparam file="$(arg unit_path)/config/perception/primitive_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/composite_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/trackers.yaml" command="load"/>
+
+  <group ns="reflectors">
+    <node pkg="target_detector" type="reflector_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="lidar" to="/$(arg robot_id)/devices/lidar/extended_laser_scan"/>
+    </node>
+  </group>
+
+  <group ns="docking_pairs">
+    <node pkg="target_detector" type="baseline_pair_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="detections_in" to="/$(arg robot_id)/perception/reflectors/detections"/>
+    </node>
+  </group>
+
+  <group ns="beacons">
+    <node pkg="target_detector" type="tmk_uwb_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="detections_in" to="/$(arg robot_id)/devices/onboard_beacon/uwb_measurements"/>
+    </node>
+  </group>
+</group>
+```
+
+`abc_rides/trees/dock_extended.xml` enables `docking_pairs` with a runtime reflector baseline before tracking and docking.
+
+## `electro_jet`
+
+`electro_jet` loads a model-specific primitive detector file with `$(arg robot_model)_primitive_detectors.yaml`. The current `robogripper` and `robohook` configs use:
+
+- `reflectors`
+- `docking_pairs`
+- `barrels`
+- `colored_small_barrels`
+
+Config example:
+
+```yaml
+reflectors:
+  type: reflector
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_top"]
+  scan_type: "sensor_msgs/LaserScan"
+  min_reflector_intensity: 600
+  reflector_size: 0.05
+  max_detection_range: 30
+  scan_decimation: 1
+  override_support_points: 0
+
+barrels:
+  type: vertical_cylinder
+  enabled_by_default: false
+  vizbose: true
+  robot_frame: "platform"
+  source_name: "camera"
+  default_diameter: 0.6
+  min_cloud_points: 1000
+  crop_min: [-0.6, 0.1, 0.4]
+  crop_max: [0.6, 0.6, 1.4]
+  voxel_size: [0.02, 0.02, 0.02]
+
+colored_small_barrels:
+  type: color_in_roi
+  enabled_by_default: false
+  default_color: "red"
+  vizbose: true
+  robot_frame: "platform"
+  source_name: "camera"
+  red_hue_center_deg: 0
+  green_hue_center_deg: 120
+  blue_hue_center_deg: 220
+  crop_min: [-0.1, 0.1, 0.55]
+  crop_max: [0.1, 0.2, 1.0]
+  min_cloud_points: 1000
+  min_color_inliers_points: 100
+```
+
+Launch wiring:
+
+```xml
+<group ns="perception">
+  <rosparam file="$(arg unit_path)/config/perception/$(arg robot_model)_primitive_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/composite_detectors.yaml" command="load"/>
+  <rosparam file="$(arg unit_path)/config/perception/trackers.yaml" command="load"/>
+
+  <group ns="reflectors">
+    <node pkg="target_detector" type="reflector_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="lidar_right" to="/$(arg robot_id)/devices/lidar_right/scan"/>
+      <remap from="lidar_left" to="/$(arg robot_id)/devices/lidar_left/scan"/>
+      <remap from="lidar_top" to="/$(arg robot_id)/devices/lidar_top/scan"/>
+    </node>
+  </group>
+
+  <group ns="barrels">
+    <node pkg="target_detector" type="vertical_cylinder_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+      <remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+    </node>
+  </group>
+
+  <group ns="colored_small_barrels">
+    <node pkg="target_detector" type="color_in_roi_perceptor" name="perceptor" output="screen">
+      <remap from="/tf_static" to="/$(arg robot_id)/tf_static"/>
+      <remap from="/tf" to="/$(arg robot_id)/navigation/tf"/>
+      <remap from="point_cloud_in" to="/$(arg robot_id)/devices/camera/depth/color/points"/>
+    </node>
+  </group>
+</group>
+```
+
+The launch exposes `lidar_right`, `lidar_left`, and `lidar_top` remaps. The current `robogripper` and `robohook` YAML files select `lidar_top` through the `lidars` parameter.
+
+Runtime examples from the BT trees:
+
+- `electro_jet/trees/dock_reflector_pair.xml` enables `docking_pairs` with `reflector_baseline`
+- `electro_jet/trees/dock_barrel.xml` enables `barrels` with `diameter`
+- `electro_jet/trees/wait_for_color.xml` waits on `colored_small_barrels` with a requested `color`

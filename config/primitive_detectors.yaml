@@ -8,7 +8,8 @@ small_reflectors: # same as node namespace
   min_reflector_intensity: 250 # only used for "sensor_msgs/LaserScan"
   reflector_size: 0.04
   max_detection_range: 20
-  scan_decimation: 5 # only every N-th scan is processed. Decimation = 3 -> process scan 1, skip scans 2 and 3, process scan 4, ...
+  scan_decimation: 5 # only every N-th scan is processed
+  override_support_points: 0 # 0 keeps the adaptive threshold, any other value forces that exact minimum support count
 
 big_reflectors:
   type: reflector
@@ -21,6 +22,7 @@ big_reflectors:
   reflector_size: 0.06
   max_detection_range: 50
   scan_decimation: 5
+  override_support_points: 0 # 0 keeps the adaptive threshold, any other value forces that exact minimum support count
 
 alvars:
   type: alvar
