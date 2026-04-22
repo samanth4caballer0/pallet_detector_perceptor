@@ -75,6 +75,7 @@ include_directories(
 add_library(detectors
 	src/detectors/reflector_detector.cpp
 	src/detectors/cluster.cpp
+	src/detectors/column_detector.cpp
 	src/detectors/pcl_base_detector.cpp
 	src/detectors/vertical_cylinder_detector.cpp
 	src/detectors/color_in_roi_detector.cpp
@@ -98,6 +99,20 @@ add_dependencies(reflector_perceptor
 	${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(reflector_perceptor
+	detectors
+	${catkin_LIBRARIES}
+)
+
+add_executable(column_perceptor
+	src/column_perceptor_main.cpp
+	src/column_perceptor.cpp
+)
+add_dependencies(column_perceptor
+	detectors
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(column_perceptor
 	detectors
 	${catkin_LIBRARIES}
 )
@@ -169,6 +184,7 @@ target_link_libraries(color_in_roi_perceptor
 install(
 	TARGETS
 		reflector_perceptor
+		column_perceptor
 		baseline_pair_perceptor
 		alvar_perceptor
 		tmk_uwb_perceptor

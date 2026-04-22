@@ -24,6 +24,17 @@ big_reflectors:
   max_detection_range: 50
   scan_decimation: 5
 
+columns:
+  type: column
+  enabled_by_default: true
+  vizbose: true
+  robot_frame: "platform"
+  lidars: ["lidar_front", "lidar_back"]
+  column_size: 0.5 # side length for square columns, diameter for cylindrical columns
+  max_detection_range: 25
+  scan_decimation: 5
+  override_support_points: 0 # 0 means automatic threshold based on column_size and range
+
 alvars:
   type: alvar
   enabled_by_default: true # bundle processing by ar_track_alvar is enabled/disabled accordingly

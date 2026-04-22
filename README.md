@@ -5,6 +5,7 @@ We can launch detections of two types:
 
 - Primitive detections: those arising from a sensor source. Available now:
 	- Reflectors from lidar intensity
+	- Columns from lidar scans
 	- Alvar bundles (we do not detect single alvars for now, so the simplest alvar detection is a bundle)
 	- TMK UWB measurements
 	- Vertical cylinders from point clouds
@@ -59,6 +60,7 @@ For yaml files, the available types now are:
 
 - Primitive:
 	- reflector
+	- column
 	- alvar
 	- tmk_uwb
 	- vertical_cylinder
@@ -69,6 +71,7 @@ For yaml files, the available types now are:
 So in the launch files, you can use the following corresponding node types:
 
 - reflector_perceptor
+- column_perceptor
 - alvar_perceptor
 - tmk_uwb_perceptor
 - vertical_cylinder_perceptor
@@ -95,6 +98,16 @@ Type reflector:
 - reflector_size (double)
 - max_detection_range (double) -> cut-off distance
 - rate (double) -> detections publish rate
+
+Type column:
+- enabled_by_default (bool)
+- vizbose (bool)
+- robot_frame (string) -> output detections are referenced to this frame
+- lidars (string array for lidar topics)
+- column_size (double) -> side length for square columns, diameter for cylindrical columns
+- max_detection_range (double) -> cut-off distance
+- scan_decimation (int) -> only every N-th scan is processed
+- override_support_points (int) -> 0 keeps the automatic support threshold, otherwise forces a fixed minimum
 
 Type alvar:
 - enabled_by_default (bool)
@@ -150,8 +163,11 @@ Each perceptor generates:
 	- `alvar` uses `alvar_marker_id`
 	- `vertical_cylinder` uses `diameter`
 	- `color_in_roi` uses `color`
+	- `column` only uses the `enable` flag
 
 For vertical cylinders, `enable=true` requires a positive `diameter` in the enable service request. If `enabled_by_default` is true, the detector starts with `default_diameter`.
+
+For columns, the detector geometry is configured from yaml. The published `radius` field carries `column_size / 2` as a nominal size for downstream consumers, even when the real column shape is not cylindrical.
 
 For `color_in_roi`, `enable=true` should provide the requested color in the `color` field of `target_detector/DetectorEnable`. The request type is `target_detector/Color`, and published `target_detector/Detection` messages also include a `color` field for color detections.
 
