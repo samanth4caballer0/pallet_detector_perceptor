@@ -107,7 +107,12 @@ Type column:
 - column_size (double) -> side length for square columns, diameter for cylindrical columns
 - max_detection_range (double) -> cut-off distance
 - scan_decimation (int) -> only every N-th scan is processed
+- column_isolation_distance (double) -> optional isolation margin around the estimated column footprint; `0` disables the check
 - override_support_points (int) -> 0 keeps the automatic support threshold, otherwise forces a fixed minimum
+
+The column perceptor also exposes `column_size`, `max_detection_range`, `scan_decimation`, `column_isolation_distance` and `override_support_points` through dynamic reconfigure. The yaml values are still applied at startup; dynamic reconfigure is intended for runtime tuning after the node has started.
+
+When `override_support_points` is `0`, the detector computes the minimum required support points from geometry. It first estimates the candidate column center, then computes the expected angular aperture of the column as `2 * asin(column_radius / estimated_center_range)`. That aperture is divided by the scan angular increment to obtain the theoretical support count, and the automatic threshold is set to `ceil(0.75 * theoretical_support_count)`. The 0.75 factor deliberately leaves margin for filtered scans and for missing edge returns, which is especially relevant on rounded columns. Finally, the automatic threshold is clamped to at least `8` points, so very close or coarse scans still require a minimum amount of evidence before publishing a detection.
 
 Type alvar:
 - enabled_by_default (bool)
@@ -168,6 +173,8 @@ Each perceptor generates:
 For vertical cylinders, `enable=true` requires a positive `diameter` in the enable service request. If `enabled_by_default` is true, the detector starts with `default_diameter`.
 
 For columns, the detector geometry is configured from yaml. The published `radius` field carries `column_size / 2` as a nominal size for downstream consumers, even when the real column shape is not cylindrical.
+
+If `column_isolation_distance` is positive, the detector also rejects candidates that have other scan points from different clusters inside the estimated footprint radius plus that extra margin. This is useful to suppress wall and wall-corner false positives when landmarks are expected to be freestanding.
 
 For `color_in_roi`, `enable=true` should provide the requested color in the `color` field of `target_detector/DetectorEnable`. The request type is `target_detector/Color`, and published `target_detector/Detection` messages also include a `color` field for color detections.
 

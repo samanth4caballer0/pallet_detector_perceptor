@@ -12,6 +12,7 @@ ADD_DEFINITIONS(${PCL_DEFINITIONS})
 
 find_package( catkin REQUIRED COMPONENTS
 	roscpp
+	dynamic_reconfigure
 	message_generation
 	geometry_msgs
 	sensor_msgs
@@ -28,6 +29,10 @@ find_package( catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
+
+generate_dynamic_reconfigure_options(
+	cfg/column_perceptor.cfg
+)
 
 add_message_files(
 	DIRECTORY msg
@@ -51,6 +56,7 @@ catkin_package(
 		include
 	CATKIN_DEPENDS
 		roscpp
+		dynamic_reconfigure
 		message_generation
 		geometry_msgs
 		sensor_msgs

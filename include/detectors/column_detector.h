@@ -37,6 +37,7 @@ class ColumnDetector
 
 		double column_size__ = 0.5; // side length for square columns, diameter for cylindrical columns
 		double max_detection_range__ = 25.0;
+		double column_isolation_distance__ = 0.0;
 		int override_support_points__ = 0;
 
 	public:
@@ -44,6 +45,7 @@ class ColumnDetector
 		bool configure(
 			const double & __column_size,
 			const double & __max_detection_range,
+			const double & __column_isolation_distance,
 			const int & __override_support_points);
 
 		std::vector<ColumnDetection> detect(

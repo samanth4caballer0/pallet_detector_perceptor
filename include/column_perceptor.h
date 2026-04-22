@@ -3,9 +3,11 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
+#include <dynamic_reconfigure/server.h>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <tf2_eigen/tf2_eigen.h>
@@ -20,6 +22,7 @@
 #include <target_detector/Detection.h>
 #include <target_detector/DetectorEnable.h>
 #include <target_detector/Detections.h>
+#include <target_detector/column_perceptorConfig.h>
 
 #include "detectors/column_detector.h"
 
@@ -37,6 +40,10 @@ class ColumnPerceptor
 		target_detector::Detection detection__;
 		target_detector::Detections detections__;
 		ros::Duration max_detection_age__ = ros::Duration(0.5);
+		dynamic_reconfigure::Server<target_detector::column_perceptorConfig> reconfigure_server__;
+		dynamic_reconfigure::Server<target_detector::column_perceptorConfig>::CallbackType reconfigure_callback__;
+		bool first_dynamic_reconfigure__ = true;
+		std::mutex reconfigure_mutex__;
 
 		ros::ServiceServer enable_server__;
 		bool enabled__ = false;
@@ -50,6 +57,7 @@ class ColumnPerceptor
 
 		double column_size__ = 0.5;
 		double max_detection_range__ = 25.0;
+		double column_isolation_distance__ = 0.0;
 		int decimation__ = 1;
 		int override_support_points__ = 0;
 		std::string robot_frame__;
@@ -69,6 +77,7 @@ class ColumnPerceptor
 
 		bool enableCallback(target_detector::DetectorEnable::Request & __request, target_detector::DetectorEnable::Response & __response);
 		bool configureParameters();
+		void reconfigureCallback(target_detector::column_perceptorConfig & __config, uint32_t __level);
 
 		void laserScanCallback(const sensor_msgs::LaserScanConstPtr & __scan_ptr, const std::string & __source_name);
 		void processScan(

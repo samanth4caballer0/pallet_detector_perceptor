@@ -33,6 +33,7 @@ columns:
   column_size: 0.5 # side length for square columns, diameter for cylindrical columns
   max_detection_range: 25
   scan_decimation: 5
+  column_isolation_distance: 0.0 # 0 disables isolation filtering; otherwise reject columns that have other scan points within column_size/sqrt(2) + this margin
   override_support_points: 0 # 0 means automatic threshold based on column_size and range
 
 alvars:

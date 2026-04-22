@@ -23,11 +23,20 @@ bool ColumnPerceptor::init()
 	enable_server__ = nh__.advertiseService("enable", &ColumnPerceptor::enableCallback, this);
 
 	detector__ = std::make_unique<Detectors::ColumnDetector>();
-	if ( !detector__->configure(column_size__, max_detection_range__, override_support_points__) )
+	if ( !detector__->configure(column_size__, max_detection_range__, column_isolation_distance__, override_support_points__) )
 	{
 		ROS_ERROR("Failed to configure column detector");
 		return false;
 	}
+
+	ros::NodeHandle private_nh("~");
+	private_nh.setParam("column_size", column_size__);
+	private_nh.setParam("max_detection_range", max_detection_range__);
+	private_nh.setParam("column_isolation_distance", column_isolation_distance__);
+	private_nh.setParam("override_support_points", override_support_points__);
+	private_nh.setParam("scan_decimation", decimation__);
+	reconfigure_callback__ = boost::bind(&ColumnPerceptor::reconfigureCallback, this, _1, _2);
+	reconfigure_server__.setCallback(reconfigure_callback__);
 
 	if ( enabled__ )
 		subscribeToLidars();
@@ -72,6 +81,7 @@ void ColumnPerceptor::processScan(
 		return;
 	}
 
+	std::lock_guard<std::mutex> lock(reconfigure_mutex__);
 	const std::vector<Detectors::ColumnDetection> detected_columns = detector__->detect(__angle_min, __angle_max, __ranges);
 
 	detections__.header = __header;
@@ -143,11 +153,46 @@ bool ColumnPerceptor::enableCallback(target_detector::DetectorEnable::Request & 
 	return true;
 }
 
+void ColumnPerceptor::reconfigureCallback(target_detector::column_perceptorConfig & __config, uint32_t __level)
+{
+	(void)__level;
+
+	if ( first_dynamic_reconfigure__ )
+	{
+		first_dynamic_reconfigure__ = false;
+		return;
+	}
+
+	ROS_INFO("Dynamic Reconfigure Request to Column Perceptor");
+	std::lock_guard<std::mutex> lock(reconfigure_mutex__);
+
+	decimation__ = __config.scan_decimation;
+	override_support_points__ = __config.override_support_points;
+	column_size__ = __config.column_size;
+	max_detection_range__ = __config.max_detection_range;
+	column_isolation_distance__ = __config.column_isolation_distance;
+
+	if ( !detector__->configure(column_size__, max_detection_range__, column_isolation_distance__, override_support_points__) )
+	{
+		ROS_WARN("Rejected invalid dynamic reconfigure request for column detector");
+		return;
+	}
+
+	detection__.radius = column_size__ / 2.0;
+	if ( vizbose__ )
+	{
+		marker__.scale.x = column_size__;
+		marker__.scale.y = column_size__;
+		marker__.scale.z = column_size__;
+	}
+}
+
 bool ColumnPerceptor::configureParameters()
 {
 	perceptor_name__ = ros::this_node::getNamespace().substr(ros::this_node::getNamespace().find_last_of('/') + 1);
 
 	nh__.param("scan_decimation", decimation__, 1);
+	nh__.param("column_isolation_distance", column_isolation_distance__, 0.0);
 	nh__.param("override_support_points", override_support_points__, 0);
 
 	if ( decimation__ < 1 )
