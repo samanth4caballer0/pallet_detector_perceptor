@@ -166,6 +166,18 @@ target_link_libraries(color_in_roi_perceptor
 	${catkin_LIBRARIES}
 )
 
+add_executable(pallet_perceptor
+	src/pallet_perceptor_main.cpp
+	src/pallet_perceptor.cpp
+)
+add_dependencies(pallet_perceptor
+	${target_detector_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(pallet_perceptor
+	${catkin_LIBRARIES}
+)
+
 install(
 	TARGETS
 		reflector_perceptor
@@ -174,6 +186,7 @@ install(
 		tmk_uwb_perceptor
 		vertical_cylinder_perceptor
 		color_in_roi_perceptor
+		pallet_perceptor
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -198,4 +211,12 @@ install(DIRECTORY config/
 
 install(DIRECTORY rviz/
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz/
+)
+
+catkin_install_python(PROGRAMS sim/scripts/publish_camera_tf.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY sim/
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/sim/
 )

@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+
+	<arg name="enable_rviz" default="true"/>
+
+	<param name="use_sim_time" value="true"/>
+
+	<env name="GAZEBO_MODEL_PATH"
+	     value="$(find target_detector)/sim/models:$(optenv GAZEBO_MODEL_PATH)" />
+
+	<!-- Gazebo with pallet_camera world -->
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" value="$(find target_detector)/sim/worlds/pallet_camera.world"/>
+		<arg name="gui" value="true"/>
+	</include>
+
+	<!-- Camera stand URDF: publishes base_link -> stand_link -> rgbd_camera_link -> optical frames -->
+	<param name="robot_description"
+	       textfile="$(find target_detector)/sim/urdf/camera_stand.urdf"/>
+
+	<!-- Spawn the camera stand in Gazebo -->
+	<node pkg="gazebo_ros" type="spawn_model" name="spawn_camera_stand"
+	      args="-urdf -model camera_stand -param robot_description
+	            -x 0.18 -y -1.03 -z 0 -Y 0.349"/>
+
+	<!-- Publish URDF joint TFs -->
+	<node pkg="robot_state_publisher" type="robot_state_publisher"
+	      name="robot_state_publisher"/>
+
+	<!-- Publish world -> base_link from Gazebo link states -->
+	<node pkg="target_detector" type="publish_camera_tf.py"
+	      name="camera_stand_tf_publisher" output="screen"/>
+
+	<!-- Load all detector parameters -->
+	<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
+
+	<!-- Pallet perceptor (namespace must match the YAML key in primitive_detectors.yaml) -->
+	<group ns="pallet_detector">
+		<node pkg="target_detector" type="pallet_perceptor" name="pallet_perceptor" output="screen">
+			<remap from="point_cloud_in" to="/demo/rgbd_camera/depth/points"/>
+		</node>
+	</group>
+
+	<!-- RViz with the target_detector pallet layout -->
+	<node if="$(arg enable_rviz)" pkg="rviz" type="rviz" name="rviz"
+	      args="-d $(find target_detector)/rviz/pallet_detector.rviz" output="screen"/>
+
+</launch>

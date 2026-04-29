@@ -1,0 +1,13 @@
+Symlinking /home/samantha/target_detector/devel/./setup.zsh
+Symlinking /home/samantha/target_detector/devel/./setup.sh
+Symlinking /home/samantha/target_detector/devel/./local_setup.sh
+Symlinking /home/samantha/target_detector/devel/./setup.bash
+Symlinking /home/samantha/target_detector/devel/./local_setup.bash
+Symlinking /home/samantha/target_detector/devel/./local_setup.fish
+Symlinking /home/samantha/target_detector/devel/./_setup_util.py
+Symlinking /home/samantha/target_detector/devel/./setup.fish
+Symlinking /home/samantha/target_detector/devel/./local_setup.zsh
+Symlinking /home/samantha/target_detector/devel/./env.sh
+Symlinking /home/samantha/target_detector/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig-version.cmake
+Symlinking /home/samantha/target_detector/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig.cmake
+Symlinking /home/samantha/target_detector/devel/lib/pkgconfig/catkin_tools_prebuild.pc

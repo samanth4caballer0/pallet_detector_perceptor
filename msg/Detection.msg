@@ -7,6 +7,7 @@ uint8 ALVAR = 4
 uint8 TMK_UWB = 5
 uint8 VERTICAL_CYLINDER = 6
 uint8 COLOR_IN_ROI = 7
+uint8 PALLET = 8
 
 # some detections have an associated id (AR markers, object class ,... )
 # If no id, set to -1
