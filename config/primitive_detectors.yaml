@@ -80,3 +80,45 @@ color_in_roi:
   crop_max: [0.1, 0.2, 0.75]
   min_cloud_points: 1000
   min_color_inliers_points: 100 # minimum number of ROI points that must match the requested color to consider it a detection
+
+pallet_detector:
+  type: pallet
+  enabled_by_default: true # useful to test with rosbags, to avoid enabling from another terminal
+  vizbose: true
+  robot_frame: "base_link"
+  source_name: "camera"
+  min_cloud_points: 1000
+
+  # ROI in sensor optical frame (x=right, y=down, z=forward)
+  crop_min: [-1.5, 0.2, 1.0]
+  crop_max: [ 1.5, 1.0, 3.5]
+  voxel_size: [0.02, 0.02, 0.02]
+
+  # Y-band crop (sensor optical frame, gravity assumption: Y=down).
+  # floor_y is the Y of the floor in the camera optical frame, fixed by camera mount height.
+  floor_y: 0.55
+
+  # Euclidean clustering
+  cluster_tolerance: 0.05
+  cluster_min_size: 500
+  cluster_max_size: 200000
+
+  # Expected EUR/EPAL pallet dimensions (m)
+  pallet_width: 0.80
+  pallet_height: 0.145
+  tol_width: 0.10
+  tol_height: 0.08
+
+  # Pre-projection RANSAC (estimates face normal so projection axes are correct at any yaw)
+  pre_ransac_max_iter: 200
+  pre_ransac_distance_thresh: 0.04
+  pre_ransac_min_inliers: 80
+
+  # Front-face template matching (Xiao et al. 2017 style)
+  tpl_cell_size: 0.02   # 2D grid resolution (m/cell)
+  chi_threshold: 0.40   # minimum chi score to accept a cluster as a pallet
+
+  # EUR/EPAL end-face geometry (must match physical pallet model)
+  tpl_stringer_width: 0.10
+  tpl_top_deck_height: 0.04
+  tpl_stringer_height: 0.06

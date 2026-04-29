@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="camera_stand">
+    <static>true</static>
+    <!-- HERE WE TUNEd THE PARAMETERS OF THE RGBD CAMERA TO MATCH THE D435F REALSENSE -->
+    <link name="stand_link">
+      <!-- Lift the link so the 0.5m-tall box sits on the ground -->
+      <pose>0 0 0.25 0 0 0</pose>
+
+      <collision name="stand_collision">
+        <geometry>
+          <box><size>0.4 0.4 0.5</size></box>
+        </geometry>
+      </collision>
+
+      <visual name="stand_visual">
+        <geometry>
+          <box><size>0.4 0.4 0.5</size></box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- D435f camera body (90mm wide x 25mm tall x 25mm deep) -->
+      <visual name="camera_body">
+        <pose>0.25 0 0.30 0 0 0</pose>
+        <geometry>
+          <box><size>0.025 0.09 0.025</size></box>
+        </geometry>
+      </visual>
+
+      <!-- ===== Intel RealSense D435f — Depth Sensor (IR Stereo) ===== -->
+      <!-- FOV: 87deg x 58deg, Resolution: 1280x720, Range: 0.105m-10m -->
+      <!-- Pose: left IR imager position (D435f coordinate origin) -->
+      <sensor name="d435f_depth" type="depth">
+        <pose>0.25 0 0.30 0 0 0</pose>
+        <visualize>true</visualize>
+        <always_on>true</always_on>
+        <update_rate>30</update_rate>
+
+        <camera>
+          <horizontal_fov>1.518</horizontal_fov>
+
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>R8G8B8</format>
+          </image>
+
+          <clip>
+            <near>0.105</near>
+            <far>10.0</far>
+          </clip>
+
+          <!-- Depth noise (Gaussian approximation of D435f stereo noise) -->
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.004</stddev>
+          </noise>
+        </camera>
+
+        <plugin name="d435f_depth_plugin" filename="libgazebo_ros_depth_camera.so">
+          <robotNamespace>/demo</robotNamespace>
+          <cameraName>rgbd_camera</cameraName>
+          <frameName>rgbd_camera_optical_frame</frameName>
+
+          <!-- Depth topics (unchanged) -->
+          <depthImageTopicName>depth/image_raw</depthImageTopicName>
+          <depthImageInfoTopicName>depth/camera_info</depthImageInfoTopicName>
+
+          <!-- Point cloud (unchanged) -->
+          <pointCloudTopicName>depth/points</pointCloudTopicName>
+
+          <!-- IR image from depth sensor (additional topic, not used downstream) -->
+          <imageTopicName>ir/image_raw</imageTopicName>
+          <cameraInfoTopicName>ir/camera_info</cameraInfoTopicName>
+
+          <!-- Range limits matching D435f minimum depth -->
+          <pointCloudCutoff>0.105</pointCloudCutoff>
+          <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
+        </plugin>
+      </sensor>
+
+      <!-- ===== Intel RealSense D435f — RGB Sensor ===== -->
+      <!-- FOV: 69.4deg x 42.5deg, Resolution: 1920x1080 -->
+      <!-- Offset ~15mm lateral from depth origin (matches physical D435f layout) -->
+      <sensor name="d435f_color" type="camera">
+        <pose>0.25 -0.015 0.30 0 0 0</pose>
+        <visualize>false</visualize>
+        <always_on>true</always_on>
+        <update_rate>30</update_rate>
+
+        <camera>
+          <horizontal_fov>1.211</horizontal_fov>
+
+          <image>
+            <width>1920</width>
+            <height>1080</height>
+            <format>R8G8B8</format>
+          </image>
+
+          <clip>
+            <near>0.105</near>
+            <far>10.0</far>
+          </clip>
+        </camera>
+
+        <plugin name="d435f_color_plugin" filename="libgazebo_ros_camera.so">
+          <robotNamespace>/demo/rgbd_camera</robotNamespace>
+          <cameraName>rgb</cameraName>
+          <frameName>rgbd_camera_color_optical_frame</frameName>
+
+          <!-- RGB topics (unchanged: /demo/rgbd_camera/rgb/image_raw) -->
+          <imageTopicName>image_raw</imageTopicName>
+          <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        </plugin>
+      </sensor>
+
+    </link>
+  </model>
+</sdf>
