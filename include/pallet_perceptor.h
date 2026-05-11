@@ -16,6 +16,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
+#include "detectors/pallet_detector.h"
 #include <target_detector/DetectorEnable.h>
 #include <target_detector/Detections.h>
 
@@ -23,7 +24,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace TargetDetector
 {
@@ -38,59 +38,34 @@ class PalletPerceptor
 		ros::NodeHandle nh__;
 		std::string perceptor_name__;
 
-		ros::Subscriber point_cloud_subscriber__;
-		ros::Publisher detections_publisher__;
-		ros::Publisher point_cloud_publisher__;
-		ros::Publisher viz_markers_publisher__;
+		ros::Subscriber    point_cloud_subscriber__;
+		ros::Publisher     detections_publisher__;
+		ros::Publisher     point_cloud_publisher__;        // cloud_out (matched_pts of best)
+		ros::Publisher     ransac_inliers_publisher__;     // cloud_ransac_inliers (debug)
+		ros::Publisher     viz_markers_publisher__;        // visuals (both cube markers)
+		ros::Publisher     no_plane_cloud_publisher__;
+		ros::Publisher     pose_publisher__;
 		ros::ServiceServer enable_server__;
 
 		tf2_ros::Buffer tf_buffer__;
 		std::shared_ptr<tf2_ros::TransformListener> tf_listener__;
 		std::map<std::string, geometry_msgs::TransformStamped> T_sensor_to_robot__;
 
-		// state
+		// The pure detection algorithm. Configured at init() from ROS params.
+		Detectors::PalletDetector detector__;
+
+		// State
 		bool enabled__ = false;
 		bool vizbose__ = false;
 
-		// standard params (shared with other perceptors)
+		// Sensor-frame preprocessing params (live in the perceptor; the detector is sensor-agnostic)
 		std::string robot_frame__;
 		std::string source_name__;
-		int min_cloud_points__ = 1000;
-		Eigen::Vector4f crop_min__;
-		Eigen::Vector4f crop_max__;
+		int    min_cloud_points__ = 1000;
 		Eigen::Vector3f voxel_size__;
-
-		// Y-band crop in sensor optical frame (gravity assumption: Y=down)
-		double floor_y__ = 0.55;
-
-		// Euclidean clustering
-		double cluster_tolerance__ = 0.05;
-		int cluster_min_size__ = 500;
-		int cluster_max_size__ = 200000;
-
-		// expected pallet dimensions (EUR/EPAL)
-		double pallet_width__ = 0.80;
-		double pallet_height__ = 0.145;
-		double tol_width__ = 0.10;
-		double tol_height__ = 0.08;
-
-		// pre-projection RANSAC for face-normal estimation
-		int pre_ransac_max_iter__ = 200;
-		double pre_ransac_distance_thresh__ = 0.04;
-		int pre_ransac_min_inliers__ = 80;
-
-		// template matching
-		double tpl_cell_size__ = 0.02;
-		double chi_threshold__ = 0.40;
-		double tpl_stringer_width__ = 0.10;
-		double tpl_top_deck_height__ = 0.04;
-		double tpl_stringer_height__ = 0.06;
-
-		// built-once template state
-		std::vector<uint8_t> template_grid__;
-		int template_cols__ = 0;
-		int template_rows__ = 0;
-		double template_mu__ = 0.0;
+		double floor_y__         = 0.55;  // Y of floor in camera optical frame (gravity)
+		double pallet_height__   = 0.145;
+		double tol_height__      = 0.08;
 
 	public:
 
@@ -109,60 +84,16 @@ class PalletPerceptor
 		void subscribeToData();
 		void unsubscribeFromData();
 
+		// Publish the OBB cube (matched_pts AABB, green) and the RANSAC-inlier
+		// cube (front-face plane AABB, red), both in sensor frame.
 		void publishMarkers(
-			const target_detector::Detections & __detections_msg,
-			const Eigen::Vector3f & __dims);
+			const std_msgs::Header & __header,
+			const geometry_msgs::Pose & __pose_in_sensor,
+			const Eigen::Vector3f & __obb_dims,
+			const geometry_msgs::Pose & __ransac_pose_in_sensor,
+			const Eigen::Vector3f & __ransac_dims);
 
 		bool saveSensorTransform(const std_msgs::Header & __header);
-
-		// --- detection pipeline (per cluster) ---
-
-		// Try to detect a pallet in a single cluster. On success: outputs the
-		// object pose in sensor frame, OBB dims, the matched-window points, and chi.
-		bool tryDetectPalletInCluster(
-			CloudT::ConstPtr __cluster,
-			Eigen::Isometry3d & __T_object_in_sensor,
-			Eigen::Vector3f & __dims,
-			CloudT::Ptr __matched_pts,
-			double & __chi) const;
-
-		// RANSAC vertical-plane fit on the cluster -> projection axis_u along the
-		// pallet face width direction. Falls back to camera-X on failure.
-		Eigen::Vector3f estimateFaceNormalAxisU(CloudT::ConstPtr __cluster) const;
-
-		// Refine yaw and (x, z) face position from the matched-window points.
-		// Returns true if RANSAC plane fit succeeded; false if PCA fallback was used.
-		bool computePalletPose(
-			CloudT::ConstPtr __matched_pts,
-			float __match_y_lo,
-			float __match_y_hi,
-			float & __face_pos_x,
-			float & __face_pos_z,
-			float & __yaw) const;
-
-		// --- template ---
-
-		// Build EUR/EPAL end-face binary template (called once at init).
-		void buildPalletTemplate();
-
-		// Rasterize cluster points onto a 2D occupancy grid in face coords (u, v).
-		void projectToFaceGrid(
-			CloudT::ConstPtr __slice,
-			const Eigen::Vector3f & __axis_u,
-			const Eigen::Vector3f & __axis_v,
-			std::vector<uint8_t> & __grid,
-			int & __gcols,
-			int & __grows,
-			float & __u_min,
-			float & __v_min) const;
-
-		// Slide the pre-built template, return best chi score and matched window.
-		double slideTemplate(
-			const std::vector<uint8_t> & __grid,
-			int __gcols,
-			int __grows,
-			int & __best_co,
-			int & __best_ro) const;
 
 		template <typename T>
 		bool getParamOrFail(const std::string & __name, T & __variable)

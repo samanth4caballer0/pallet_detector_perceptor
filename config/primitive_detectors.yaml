@@ -88,18 +88,16 @@ pallet_detector:
   robot_frame: "base_link"
   source_name: "camera"
   min_cloud_points: 1000
-
-  # ROI in sensor optical frame (x=right, y=down, z=forward)
-  crop_min: [-1.5, 0.2, 1.0]
-  crop_max: [ 1.5, 1.0, 3.5]
   voxel_size: [0.02, 0.02, 0.02]
 
-  # Y-band crop (sensor optical frame, gravity assumption: Y=down).
-  # floor_y is the Y of the floor in the camera optical frame, fixed by camera mount height.
+  # Y-band crop (sensor optical frame, gravity assumption: Y=down)
+  # Sole spatial filter: replaces an explicit XYZ ROI box. Camera mount height is fixed,
+  # so floor_y in optical frame is a known constant. Anything outside this band is dropped
+  # before voxel downsampling, since the pallet must sit on the floor at known height.
   floor_y: 0.55
 
   # Euclidean clustering
-  cluster_tolerance: 0.05
+  cluster_tolerance: 0.04
   cluster_min_size: 500
   cluster_max_size: 200000
 
@@ -107,7 +105,7 @@ pallet_detector:
   pallet_width: 0.80
   pallet_height: 0.145
   tol_width: 0.10
-  tol_height: 0.08
+  tol_height: 0.03  # tightened from 0.08 -> was catching carton-box-bottom sliver above the pallet top
 
   # Pre-projection RANSAC (estimates face normal so projection axes are correct at any yaw)
   pre_ransac_max_iter: 200

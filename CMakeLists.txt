@@ -85,6 +85,7 @@ add_library(detectors
 	src/detectors/pcl_base_detector.cpp
 	src/detectors/vertical_cylinder_detector.cpp
 	src/detectors/color_in_roi_detector.cpp
+	src/detectors/pallet_detector.cpp
 )
 #add_dependencies(detectors
 #	${catkin_EXPORTED_TARGETS}
@@ -192,10 +193,12 @@ add_executable(pallet_perceptor
 	src/pallet_perceptor.cpp
 )
 add_dependencies(pallet_perceptor
+	detectors
 	${target_detector_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
 target_link_libraries(pallet_perceptor
+	detectors
 	${catkin_LIBRARIES}
 )
 
@@ -236,6 +239,8 @@ install(DIRECTORY rviz/
 )
 
 catkin_install_python(PROGRAMS sim/scripts/publish_camera_tf.py
+	                       sim/scripts/add_pointcloud_noise.py
+	                       sim/scripts/evaluate_pallet_pose.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -22,6 +22,12 @@
 	<node pkg="gazebo_ros" type="spawn_model" name="spawn_camera_stand"
 	      args="-urdf -model camera_stand -param robot_description
 	            -x 0.18 -y -1.03 -z 0 -Y 0.349"/>
+	<!-- <node pkg="gazebo_ros" type="spawn_model" name="spawn_camera_stand"
+        args="-urdf -model camera_stand -param robot_description
+              -x 0 -y 0 -z 0 -Y 0"/> -->
+  	<!-- <node pkg="gazebo_ros" type="spawn_model" name="spawn_camera_stand"
+        args="-urdf -model camera_stand -param robot_description
+              -x 0.18 -y 1.03 -z 0 -Y -0.349"/> -->
 
 	<!-- Publish URDF joint TFs -->
 	<node pkg="robot_state_publisher" type="robot_state_publisher"
@@ -31,18 +37,42 @@
 	<node pkg="target_detector" type="publish_camera_tf.py"
 	      name="camera_stand_tf_publisher" output="screen"/>
 
+	<!-- Inject D435-style range noise into the depth cloud -->
+	<arg name="enable_noise" default="true"/>
+	<arg name="base_stddev"  default="0.001"/>
+	<arg name="range_coeff"  default="0.0025"/>
+	<node if="$(arg enable_noise)" pkg="target_detector"
+	      type="add_pointcloud_noise.py" name="pointcloud_noiser" output="screen">
+		<param name="input"       value="/demo/rgbd_camera/depth/points"/>
+		<param name="output"      value="/demo/rgbd_camera/depth/points_noisy"/>
+		<param name="base_stddev" value="$(arg base_stddev)"/>
+		<param name="range_coeff" value="$(arg range_coeff)"/>
+	</node>
+
 	<!-- Load all detector parameters -->
 	<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
 
 	<!-- Pallet perceptor (namespace must match the YAML key in primitive_detectors.yaml) -->
+	<arg name="cloud_topic" default="/demo/rgbd_camera/depth/points_noisy" if="$(arg enable_noise)"/>
+	<arg name="cloud_topic" default="/demo/rgbd_camera/depth/points"       unless="$(arg enable_noise)"/>
 	<group ns="pallet_detector">
 		<node pkg="target_detector" type="pallet_perceptor" name="pallet_perceptor" output="screen">
-			<remap from="point_cloud_in" to="/demo/rgbd_camera/depth/points"/>
+			<remap from="point_cloud_in" to="$(arg cloud_topic)"/>
 		</node>
 	</group>
 
+	<!-- Per-frame pose-error evaluator vs Gazebo ground truth -->
+	<arg name="enable_eval" default="true"/>
+	<arg name="eval_csv"    default=""/>
+	<node if="$(arg enable_eval)" pkg="target_detector"
+	      type="evaluate_pallet_pose.py" name="pallet_pose_evaluator" output="screen">
+		<param name="gt_model"    value="pallet"/>
+		<param name="world_frame" value="world"/>
+		<param name="csv_path"    value="$(arg eval_csv)"/>
+	</node>
+
 	<!-- RViz with the target_detector pallet layout -->
 	<node if="$(arg enable_rviz)" pkg="rviz" type="rviz" name="rviz"
-	      args="-d $(find target_detector)/rviz/pallet_detector.rviz" output="screen"/>
+	      args="-d $(find target_detector)/rviz/pallet_detector_1.rviz" output="screen"/>
 
 </launch>
