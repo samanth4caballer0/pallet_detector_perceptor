@@ -1,0 +1,23 @@
+# Catkin build artifacts
+build/
+devel/
+install/
+logs/
+.catkin_tools/
+
+# Editor / IDE noise
+*.swp
+*.swo
+.vscode/
+.idea/
+.DS_Store
+
+# Compiled & generated files
+*.o
+*.a
+*.so
+*.pyc
+__pycache__/
+
+# Misc
+*.bag

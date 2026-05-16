@@ -1,6 +1,0 @@
-devel_space: /home/samantha/target_detector/devel
-install: false
-install_space: /home/samantha/target_detector/install
-profile: default
-source_space: /home/samantha/target_detector/src
-workspace: /home/samantha/target_detector
