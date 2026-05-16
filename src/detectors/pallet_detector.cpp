@@ -135,7 +135,7 @@ bool PalletDetector::detect(
 	__T_O_C               = T_best;
 	__confidence_level    = best_chi;
 
-	// 4) Cache debug data for the perceptor to retrieve via getLast*()
+	// 4) Cache debug data for the perceptor to retrieve via getLast()
 	last_obb_dims__              = dims_best;
 	last_ransac_inliers__        = ransac_inliers_best;
 	last_ransac_marker_pose__    = ransac_marker_pose_best;

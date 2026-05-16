@@ -62,31 +62,60 @@
           </noise>
         </camera>
 
+        <!-- ===== OLD: libgazebo_ros_depth_camera.so plugin — replaced by openni_kinect below =====
         <plugin name="d435f_depth_plugin" filename="libgazebo_ros_depth_camera.so">
           <robotNamespace>/demo</robotNamespace>
           <cameraName>rgbd_camera</cameraName>
           <frameName>rgbd_camera_optical_frame</frameName>
-
-          <!-- Depth topics (unchanged) -->
+          Depth topics (unchanged)
           <depthImageTopicName>depth/image_raw</depthImageTopicName>
           <depthImageInfoTopicName>depth/camera_info</depthImageInfoTopicName>
-
-          <!-- Point cloud (unchanged) -->
+          Point cloud (unchanged)
           <pointCloudTopicName>depth/points</pointCloudTopicName>
-
-          <!-- IR image from depth sensor (additional topic, not used downstream) -->
+          IR image from depth sensor (additional topic, not used downstream)
           <imageTopicName>ir/image_raw</imageTopicName>
           <cameraInfoTopicName>ir/camera_info</cameraInfoTopicName>
-
-          <!-- Range limits matching D435f minimum depth -->
+          Range limits matching D435f minimum depth
           <pointCloudCutoff>0.105</pointCloudCutoff>
           <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
         </plugin>
+        ===== END OLD plugin ===== -->
+
+        <!-- openni_kinect plugin; topic/frame names adapted to the existing pipeline -->
+        <plugin name="camera_plugin" filename="libgazebo_ros_openni_kinect.so">
+          <baseline>0.2</baseline>
+          <alwaysOn>true</alwaysOn>
+          <!-- Keep this zero, update_rate in the parent <sensor> tag
+            will control the frame rate. -->
+          <updateRate>0.0</updateRate>
+          <cameraName>camera_ir</cameraName>
+          <imageTopicName>/demo/rgbd_camera/rgb/image_raw</imageTopicName>
+          <cameraInfoTopicName>/demo/rgbd_camera/rgb/camera_info</cameraInfoTopicName>
+          <depthImageTopicName>/demo/rgbd_camera/depth/image_raw</depthImageTopicName>
+          <depthImageCameraInfoTopicName>/demo/rgbd_camera/depth/camera_info</depthImageCameraInfoTopicName>
+          <pointCloudTopicName>/demo/rgbd_camera/depth/points</pointCloudTopicName>
+          <frameName>rgbd_camera_optical_frame</frameName>
+          <pointCloudCutoff>0.105</pointCloudCutoff>
+          <pointCloudCutoffMax>10.0</pointCloudCutoffMax>
+          <distortionK1>0</distortionK1>
+          <distortionK2>0</distortionK2>
+          <distortionK3>0</distortionK3>
+          <distortionT1>0</distortionT1>
+          <distortionT2>0</distortionT2>
+          <CxPrime>0</CxPrime>
+          <Cx>0</Cx>
+          <Cy>0</Cy>
+          <focalLength>0</focalLength>
+          <hackBaseline>0</hackBaseline>
+        </plugin>
       </sensor>
 
-      <!-- ===== Intel RealSense D435f — RGB Sensor ===== -->
-      <!-- FOV: 69.4deg x 42.5deg, Resolution: 1920x1080 -->
-      <!-- Offset ~15mm lateral from depth origin (matches physical D435f layout) -->
+      <!-- ===== Intel RealSense D435f — RGB Sensor =====
+           Commented out: the openni_kinect plugin above now publishes the
+           RGB image/camera_info on /demo/rgbd_camera/rgb/*, making this
+           separate sensor redundant.
+           FOV: 69.4deg x 42.5deg, Resolution: 1920x1080
+           Offset ~15mm lateral from depth origin (matches physical D435f layout)
       <sensor name="d435f_color" type="camera">
         <pose>0.25 -0.015 0.30 0 0 0</pose>
         <visualize>false</visualize>
@@ -112,12 +141,12 @@
           <robotNamespace>/demo/rgbd_camera</robotNamespace>
           <cameraName>rgb</cameraName>
           <frameName>rgbd_camera_color_optical_frame</frameName>
-
-          <!-- RGB topics (unchanged: /demo/rgbd_camera/rgb/image_raw) -->
+          RGB topics (unchanged: /demo/rgbd_camera/rgb/image_raw)
           <imageTopicName>image_raw</imageTopicName>
           <cameraInfoTopicName>camera_info</cameraInfoTopicName>
         </plugin>
       </sensor>
+      ===== END RGB Sensor ===== -->
 
     </link>
   </model>
