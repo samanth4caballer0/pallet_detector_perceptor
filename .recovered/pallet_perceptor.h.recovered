@@ -64,7 +64,7 @@ class PalletPerceptor
 		std::string source_name__;
 		int    min_cloud_points__ = 1000;
 		Eigen::Vector3f voxel_size__;
-		double floor_y__         = 0.27;  // Y of floor in camera optical frame (gravity)
+		double floor_y__         = 0.55;  // Y of floor in camera optical frame (gravity)
 		double pallet_height__   = 0.145;
 		double tol_height__      = 0.08;
 

@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<launch>
+
+	<arg name="enable_rviz"  default="true"/>
+	<arg name="enable_noise" default="true"/>
+	<arg name="enable_eval"  default="true"/>
+	<arg name="base_stddev"  default="0.001"/>
+	<arg name="range_coeff"  default="0.0025"/>
+	<arg name="eval_csv"     default=""/>
+
+	<param name="use_sim_time" value="true"/>
+
+	<!-- Gazebo with WalledCubes world (pallet included via <include> in the .world) -->
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" value="$(find site-models)/worlds/WalledCubes.world"/>
+		<arg name="gui"        value="true"/>
+		<arg name="paused"     value="false"/>
+	</include>
+
+	<!-- Duna robot description, with RGBD camera enabled and original RGB disabled.
+
+	     robot_description_at_root:=true tells duna's gazebo plugins to read the
+	     URDF from /robot_description (root) instead of ${hwiface_namespace}/...
+	     This is needed because roslaunch does not reliably honor nested
+	     namespaces on <param command=> for the "robot_description" name.
+	     The arg defaults to false in duna so company deployments are unaffected. -->
+	<param name="robot_description" command="/opt/ros/noetic/bin/xacro $(find duna)/urdf/robot.urdf hwiface_namespace:=/duna/hwiface devices_namespace:=/duna/devices use_udp:=false use_camera:=false use_rgbd_camera:=true robot_description_at_root:=true"/>
+
+	<!-- Spawn duna at world origin (pallet sits 2 m in front per the .world file) -->
+	<node pkg="gazebo_ros" type="spawn_model" name="spawn_duna"
+	      args="-urdf -model duna -param robot_description -x 0 -y 0 -z 0"/>
+
+	<!-- Publish URDF joint TFs -->
+	<node pkg="robot_state_publisher" type="robot_state_publisher"
+	      name="robot_state_publisher"/>
+
+	<!-- Bridge world -> base. Duna's URDF root link is "base" (not base_footprint),
+	     and the robot is static in this test launch, so a single identity transform
+	     closes the chain world -> base -> ... -> rgbd_camera_optical_frame.
+	     If you later load duna's mobile_robot_controller and it publishes
+	     odom -> base, REMOVE this static to avoid two parents for "base". -->
+	<node pkg="tf2_ros" type="static_transform_publisher"
+	      name="world_to_base"
+	      args="0 0 0 0 0 0 world base"/>
+
+	<!-- D435-style range noise on the depth cloud -->
+	<node if="$(arg enable_noise)" pkg="target_detector"
+	      type="add_pointcloud_noise.py" name="pointcloud_noiser" output="screen">
+		<param name="input"       value="/demo/rgbd_camera/depth/points"/>
+		<param name="output"      value="/demo/rgbd_camera/depth/points_noisy"/>
+		<param name="base_stddev" value="$(arg base_stddev)"/>
+		<param name="range_coeff" value="$(arg range_coeff)"/>
+	</node>
+
+	<!-- Detector parameters -->
+	<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
+
+	<!-- Override pallet_detector robot_frame. The shared YAML uses "base_link" (the
+	     frame name of the camera_stand sim). Duna does not have "base_link"; the
+	     other duna detectors all use "platform". Match them so TF lookup succeeds. -->
+	<param name="/pallet_detector/robot_frame" value="platform"/>
+
+	<!-- Override floor_y for duna's camera geometry. The shared YAML uses 0.55 m
+	     (camera_stand height). Duna's rgbd_camera_link sits ~0.27 m above the
+	     floor: wheels at z=0, base/platform at z=0, camera_front at z=0.22, and
+	     rgbd_camera_link 0.05 m above that. With floor_y=0.55 the band-crop
+	     misses every point on the pallet → detector returns silently. -->
+	<param name="/pallet_detector/floor_y" value="0.27"/>
+
+	<!-- Pallet perceptor (namespace must match the YAML key in primitive_detectors.yaml) -->
+	<arg name="cloud_topic" default="/demo/rgbd_camera/depth/points_noisy" if="$(arg enable_noise)"/>
+	<arg name="cloud_topic" default="/demo/rgbd_camera/depth/points"       unless="$(arg enable_noise)"/>
+	<group ns="pallet_detector">
+		<node pkg="target_detector" type="pallet_perceptor" name="pallet_perceptor" output="screen">
+			<remap from="point_cloud_in" to="$(arg cloud_topic)"/>
+		</node>
+	</group>
+
+	<!-- Per-frame pose-error evaluator vs Gazebo ground truth -->
+	<node if="$(arg enable_eval)" pkg="target_detector"
+	      type="evaluate_pallet_pose.py" name="pallet_pose_evaluator" output="screen">
+		<param name="gt_model"    value="pallet"/>
+		<param name="world_frame" value="world"/>
+		<param name="csv_path"    value="$(arg eval_csv)"/>
+	</node>
+
+	<!-- RViz with the duna+WalledCubes pallet layout (separate from pallet_detector_1.rviz) -->
+	<node if="$(arg enable_rviz)" pkg="rviz" type="rviz" name="rviz"
+	      args="-d $(find target_detector)/rviz/pallet_detector_2.rviz" output="screen"/>
+
+</launch>
