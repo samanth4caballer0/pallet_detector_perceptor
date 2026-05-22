@@ -242,13 +242,23 @@ bool PalletDetector::tryDetectPalletInCluster(
 	if (pal_z.z() > 0.f) pal_z = -pal_z;
 	const Eigen::Vector3f pal_y = pal_z.cross(pal_x);
 
+	// Published object frame follows the navigator/tracker ALVAR convention:
+	//   x = forward  (face normal, pointing back toward the camera) -> pal_z
+	//   y = lateral  (along the pallet face width)                  -> pal_x
+	//   z = up       (vertical)                                     -> pal_y
 	__T_object_in_sensor = Eigen::Isometry3d::Identity();
-	__T_object_in_sensor.linear().col(0) = pal_x.cast<double>();
-	__T_object_in_sensor.linear().col(1) = pal_y.cast<double>();
-	__T_object_in_sensor.linear().col(2) = pal_z.cast<double>();
+	// Previous convention (x=width, y=up, z=approach) — replaced 2026-05-22:
+	// __T_object_in_sensor.linear().col(0) = pal_x.cast<double>();
+	// __T_object_in_sensor.linear().col(1) = pal_y.cast<double>();
+	// __T_object_in_sensor.linear().col(2) = pal_z.cast<double>();
+	__T_object_in_sensor.linear().col(0) = pal_z.cast<double>();
+	__T_object_in_sensor.linear().col(1) = pal_x.cast<double>();
+	__T_object_in_sensor.linear().col(2) = pal_y.cast<double>();
 	__T_object_in_sensor.translation() = Eigen::Vector3d(face_pos_x, face_pos_y, face_pos_z);
 
-	__dims = Eigen::Vector3f(matched_W, match_y_hi - match_y_lo, kObbDepthForViz);
+	// dims ordered to match the object axes above: (depth, width, height)
+	// __dims = Eigen::Vector3f(matched_W, match_y_hi - match_y_lo, kObbDepthForViz);
+	__dims = Eigen::Vector3f(kObbDepthForViz, matched_W, match_y_hi - match_y_lo);
 
 	// RANSAC-inlier AABB in pallet-local frame, used to size the debug OBB marker.
 	float lx_min = FLT_MAX, lx_max = -FLT_MAX;
@@ -273,10 +283,15 @@ bool PalletDetector::tryDetectPalletInCluster(
 
 	__ransac_marker_pose = __T_object_in_sensor; // same orientation as the main OBB
 	__ransac_marker_pose.translation() = center_sensor.cast<double>();
+	// ordered to match the object axes: (depth=pal_z, width=pal_x, height=pal_y)
+	// __ransac_marker_dims = Eigen::Vector3f(
+	// 	lx_max - lx_min,
+	// 	ly_max - ly_min,
+	// 	std::max(lz_max - lz_min, 0.005f)); // floor at 5 mm so it's visible in RViz
 	__ransac_marker_dims = Eigen::Vector3f(
-		lx_max - lx_min,
-		ly_max - ly_min,
-		std::max(lz_max - lz_min, 0.005f)); // floor at 5 mm so it's visible in RViz
+		std::max(lz_max - lz_min, 0.005f), // depth  (x): floor at 5 mm so it's visible in RViz
+		lx_max - lx_min,                   // width  (y)
+		ly_max - ly_min);                  // height (z)
 
 	std::cout << "  pallet candidate: chi=" << __chi
 	          << " matched_W=" << matched_W
