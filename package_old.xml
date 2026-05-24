@@ -1,3 +1,4 @@
+python3 sim/scripts/plot_world_scatter.py /tmp/eval_run1.csv
 <?xml version="1.0"?>
 <package format="2">
   <name>target_detector</name>
