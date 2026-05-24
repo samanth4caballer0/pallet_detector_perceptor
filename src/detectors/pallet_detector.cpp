@@ -161,7 +161,7 @@ bool PalletDetector::tryDetectPalletInCluster(
 	if (static_cast<int>(__cluster->size()) < kMinClusterSize)
 		return false;
 
-	// Statistical outlier removal: drop points whose mean distance to their
+	// SOR: drop points whose mean distance to their
 	// K nearest neighbours is more than kSorStddevThresh*sigma above the
 	// cluster average. Removes scattered ray-direction noise that pulls the
 	// pose RANSAC plane fit off-axis without losing real face points.
@@ -182,7 +182,7 @@ bool PalletDetector::tryDetectPalletInCluster(
 	const Eigen::Vector3f axis_u = estimateFaceNormalAxisU(cluster_clean, pre_ransac_rejected);
 	if (pre_ransac_rejected)
 		return false;
-	const Eigen::Vector3f axis_v(0.0f, 1.0f, 0.0f); // camera Y, always correct for upright pallet
+	const Eigen::Vector3f axis_v(0.0f, 1.0f, 0.0f); // camera Y 
 
 	// Project + slide template
 	std::vector<uint8_t> grid;
@@ -225,9 +225,9 @@ bool PalletDetector::tryDetectPalletInCluster(
 	                       __ransac_inliers, face_pos_x, face_pos_z, yaw))
 		return false;
 
-	// Sanity: pose-RANSAC's yaw should agree with the pre-RANSAC's implicit yaw
+	// Sanity check: pose-RANSAC's yaw should agree with the pre-RANSAC's implicit yaw
 	// (the angle of axis_u). If they disagree by more than ~8 deg, the two
-	// stages are not seeing the same surface — reject the cluster.
+	// stages are not seeing the same surface -> reject the cluster.
 	const float pre_yaw  = std::atan2(axis_u.z(), axis_u.x());
 	const float yaw_diff = std::remainder(yaw - pre_yaw, 2.0f * static_cast<float>(M_PI));
 	if (std::abs(yaw_diff) > kMaxPrePoseYawDiffRad)

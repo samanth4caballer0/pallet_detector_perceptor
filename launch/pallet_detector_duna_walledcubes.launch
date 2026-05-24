@@ -17,13 +17,7 @@
 		<arg name="paused"     value="false"/>
 	</include>
 
-	<!-- Duna robot description, with RGBD camera enabled and original RGB disabled.
-
-	     robot_description_at_root:=true tells duna's gazebo plugins to read the
-	     URDF from /robot_description (root) instead of ${hwiface_namespace}/...
-	     This is needed because roslaunch does not reliably honor nested
-	     namespaces on <param command=> for the "robot_description" name.
-	     The arg defaults to false in duna so company deployments are unaffected. -->
+	<!-- Duna robot description, with RGBD camera enabled, original RGB disabled -->
 	<param name="robot_description" command="/opt/ros/noetic/bin/xacro $(find duna)/urdf/robot.urdf hwiface_namespace:=/duna/hwiface devices_namespace:=/duna/devices use_udp:=false use_camera:=false use_rgbd_camera:=true robot_description_at_root:=true"/>
 
 	<!-- Spawn duna at world origin (pallet sits 2 m in front per the .world file) -->
@@ -34,11 +28,7 @@
 	<node pkg="robot_state_publisher" type="robot_state_publisher"
 	      name="robot_state_publisher"/>
 
-	<!-- Bridge world -> base. Duna's URDF root link is "base" (not base_footprint),
-	     and the robot is static in this test launch, so a single identity transform
-	     closes the chain world -> base -> ... -> rgbd_camera_optical_frame.
-	     If you later load duna's mobile_robot_controller and it publishes
-	     odom -> base, REMOVE this static to avoid two parents for "base". -->
+	<!-- Bridge world -> base -->
 	<node pkg="tf2_ros" type="static_transform_publisher"
 	      name="world_to_base"
 	      args="0 0 0 0 0 0 world base"/>
@@ -55,16 +45,10 @@
 	<!-- Detector parameters -->
 	<rosparam file="$(find target_detector)/config/primitive_detectors.yaml" command="load"/>
 
-	<!-- Override pallet_detector robot_frame. The shared YAML uses "base_link" (the
-	     frame name of the camera_stand sim). Duna does not have "base_link"; the
-	     other duna detectors all use "platform". Match them so TF lookup succeeds. -->
+	<!-- Override pallet_detector robot_frame -->
 	<param name="/pallet_detector/robot_frame" value="platform"/>
 
-	<!-- Override floor_y for duna's camera geometry. The shared YAML uses 0.55 m
-	     (camera_stand height). Duna's rgbd_camera_link sits ~0.27 m above the
-	     floor: wheels at z=0, base/platform at z=0, camera_front at z=0.22, and
-	     rgbd_camera_link 0.05 m above that. With floor_y=0.55 the band-crop
-	     misses every point on the pallet → detector returns silently. -->
+	<!-- Override floor_y for duna's camera geometry -->
 	<param name="/pallet_detector/floor_y" value="0.27"/>
 
 	<!-- Pallet perceptor (namespace must match the YAML key in primitive_detectors.yaml) -->
