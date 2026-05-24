@@ -18,7 +18,7 @@
 	</include>
 
 	<!-- Duna robot description, with RGBD camera enabled, original RGB disabled -->
-	<param name="robot_description" command="/opt/ros/noetic/bin/xacro $(find duna)/urdf/robot.urdf hwiface_namespace:=/duna/hwiface devices_namespace:=/duna/devices use_udp:=false use_camera:=false use_rgbd_camera:=true robot_description_at_root:=true"/>
+	<param name="robot_description" command="/opt/ros/noetic/bin/xacro $(find duna)/urdf/robot.urdf hwiface_namespace:=/duna/hwiface devices_namespace:=/duna/devices use_udp:=false use_camera:=false use_camera:=true robot_description_at_root:=true"/>
 
 	<!-- Spawn duna at world origin (pallet sits 2 m in front per the .world file) -->
 	<node pkg="gazebo_ros" type="spawn_model" name="spawn_duna"
