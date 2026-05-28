@@ -72,6 +72,10 @@ class PalletPerceptor
 
 		bool init();
 
+		// Prints the cluster-level rejection breakdown on destruction so the
+		// Ch5 Limitations section can quote it directly from the launch log.
+		~PalletPerceptor();
+
 	protected:
 
 		bool configureParameters();

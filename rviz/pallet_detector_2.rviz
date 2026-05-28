@@ -6,11 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Band-cropped cloud1
-        - /Pallet pose1
-        - /downsampled_cloud1
       Splitter Ratio: 0.5
-    Tree Height: 871
+    Tree Height: 435
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -103,38 +100,10 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Min Color: 0; 0; 0
-      Name: ROI cloud
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 2
-      Size (m): 0.004999999888241291
-      Style: Points
-      Topic: /pallet_detector/cloud_roi
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: false
-      Value: false
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
       Color: 0; 200; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -149,7 +118,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -178,20 +147,49 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: false
       Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 0; 200
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: RANSAC inliers
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.009999999776482582
+      Style: Points
+      Topic: /pallet_detector/cloud_ransac_inliers
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: false
+      Value: true
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /pallet_detector/visuals
       Name: Pallet marker
       Namespaces:
-        {}
+        pallet_detector: true
+        pallet_detector_ransac: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Alpha: 1
       Axes Length: 0.5
       Axes Radius: 0.009999999776482582
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: false
+      Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: Pallet pose
@@ -201,9 +199,9 @@ Visualization Manager:
       Shape: Axes
       Topic: /pallet_detector/pallet_pose
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/Image
-      Enabled: false
+      Enabled: true
       Image Topic: /demo/rgbd_camera/depth/image_raw
       Max Value: 1
       Median window: 5
@@ -213,7 +211,7 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/TF
       Enabled: true
       Filter (blacklist): ""
@@ -221,15 +219,33 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        base_link:
+        base:
+          Value: true
+        camera_front:
+          Value: true
+        camera_front_optical:
+          Value: true
+        caster_hinge_b:
+          Value: true
+        caster_hinge_f:
+          Value: true
+        caster_wheel_b:
+          Value: true
+        caster_wheel_f:
+          Value: true
+        imu:
+          Value: true
+        lidar_back:
+          Value: true
+        lidar_front:
+          Value: true
+        platform:
           Value: true
         rgbd_camera_color_optical_frame:
           Value: true
         rgbd_camera_link:
           Value: true
         rgbd_camera_optical_frame:
-          Value: true
-        stand_link:
           Value: true
         world:
           Value: true
@@ -241,13 +257,28 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          base_link:
-            stand_link:
-              rgbd_camera_link:
-                rgbd_camera_color_optical_frame:
+          base:
+            caster_hinge_b:
+              caster_wheel_b:
+                {}
+            caster_hinge_f:
+              caster_wheel_f:
+                {}
+            platform:
+              camera_front:
+                camera_front_optical:
                   {}
-                rgbd_camera_optical_frame:
-                  {}
+                rgbd_camera_link:
+                  rgbd_camera_color_optical_frame:
+                    {}
+                  rgbd_camera_optical_frame:
+                    {}
+              imu:
+                {}
+              lidar_back:
+                {}
+              lidar_front:
+                {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -334,7 +365,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.329810380935669
+      Distance: 3.513906717300415
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -364,7 +395,7 @@ Window Geometry:
   Hide Right Dock: true
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd000000010000000000000222000003a2fc0200000008fb000000160044006500700074006800200049006d006100670065000000003b000001a00000001600fffffffb000000100044006900730070006c006100790073010000003b000003a2000000c700fffffffb0000001200530065006c0065006300740069006f006e00000001eb000000800000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000002c2000000c10000005c00fffffffb0000000a0056006900650077007300000002d0000000c6000000a000fffffffb0000000800540069006d006500000003720000006b0000003700fffffffb0000000a0049006d006100670065000000022f000001ae0000001600fffffffb000000160044006500700074006800200049006d006100670065000000032a000000b3000000000000000000000510000003a200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000010000000000000222000003a2fc0200000008fb000000160044006500700074006800200049006d006100670065000000003b000001a00000001600fffffffb000000100044006900730070006c006100790073010000003b000001ee000000c700fffffffb0000001200530065006c0065006300740069006f006e00000001eb000000800000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000002c2000000c10000005c00fffffffb0000000a0056006900650077007300000002d0000000c6000000a000fffffffb0000000800540069006d006500000003720000006b0000003700fffffffb0000000a0049006d006100670065010000022f000001ae0000001600fffffffb000000160044006500700074006800200049006d006100670065000000032a000000b3000000000000000000000510000003a200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

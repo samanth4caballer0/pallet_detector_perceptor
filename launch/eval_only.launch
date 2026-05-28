@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+    Standalone pallet-pose evaluator. Run alongside the real deployment
+    launch chain (deployment_single_robot.launch -> brain.launch) so the
+    CSV / scatter plot from plot_world_scatter.py works outside of the
+    pallet_detector_duna_walledcubes.launch demo setup.
+
+    The evaluator only needs:
+      - /pallet_detector/pallet_pose  (published by the perceptor)
+      - /gazebo/model_states          (published by Gazebo)
+      - the URDF TF chain optical -> base  (from robot_state_publisher)
+    All of which the deployment chain already provides.
+
+    Note: pallet_length is no longer set here. The evaluator's default has
+    been calibrated to the pallet_realistic mesh + detector's stringer-face
+    measurement. Override on the command line only if you change the model.
+    -->
+
+    <arg name="eval_csv"    default=""/>
+    <arg name="gt_model"    default="pallet"/>
+    <arg name="robot_model" default="duna"/>
+    <arg name="robot_frame" default="base"/>
+    <arg name="world_frame" default="world"/>
+
+    <node pkg="target_detector" type="evaluate_pallet_pose.py"
+          name="pallet_pose_evaluator" output="screen">
+        <param name="gt_model"    value="$(arg gt_model)"/>
+        <param name="robot_model" value="$(arg robot_model)"/>
+        <param name="robot_frame" value="$(arg robot_frame)"/>
+        <param name="world_frame" value="$(arg world_frame)"/>
+        <param name="csv_path"    value="$(arg eval_csv)"/>
+    </node>
+</launch>

@@ -3,6 +3,8 @@
 
 #include <cfloat>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 
 namespace TargetDetector
 {
@@ -13,6 +15,41 @@ namespace TargetDetector
 		constexpr float kFloorBandMargin = 0.05f; // exclude floor by 5 cm
 		constexpr int kMinPostBandPoints = 200;
 		constexpr int kMinPostVoxelPoints = 100;
+	}
+
+	// ---------------------------------------------------------------------------
+	// Destruction: print the cluster-level rejection breakdown
+	// ---------------------------------------------------------------------------
+
+	PalletPerceptor::~PalletPerceptor()
+	{
+		using Detectors::PalletDetector;
+		using Reason = PalletDetector::RejectionReason;
+
+		const size_t total = detector__.getTotalAttempts();
+		if (total == 0)
+			return;
+
+		const size_t success = detector__.getRejectionCount(Reason::Success);
+		std::cout << "\n[pallet_perceptor] cluster-level rejection breakdown "
+		          << "(" << success << " / " << total
+		          << " clusters accepted as pallets):\n";
+
+		for (int i = 0; i < static_cast<int>(Reason::_Count); ++i)
+		{
+			const auto r = static_cast<Reason>(i);
+			const size_t n = detector__.getRejectionCount(r);
+			if (n == 0)
+				continue;
+			const double pct = 100.0 * static_cast<double>(n)
+			                         / static_cast<double>(total);
+			std::cout << "  " << std::setw(20) << std::left
+			          << PalletDetector::rejectionName(r)
+			          << std::right << std::setw(7) << n
+			          << "  (" << std::fixed << std::setprecision(1)
+			          << std::setw(5) << pct << "%)\n";
+		}
+		std::cout.flush();
 	}
 
 	// ---------------------------------------------------------------------------

@@ -7,6 +7,8 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -45,6 +47,26 @@ struct PalletDetectorConfig
 
 class PalletDetector : public PclBaseDetector
 {
+	public:
+		// Cluster-level rejection categories. Each call to
+		// tryDetectPalletInCluster() classifies the cluster into exactly one
+		// of these. Counts accumulate over the detector's lifetime; reset
+		// via resetRejectionCounts().
+		enum class RejectionReason : int
+		{
+			Success = 0,
+			ClusterTooSmall,         // initial cluster below kMinClusterSize
+			SorTooSmall,             // SOR-filtered cluster below kMinClusterSize
+			PreRansacFailed,         // no valid face plane / vertical normal
+			ProjectionTooSmall,      // projection grid smaller than template
+			TemplateChiLow,          // best chi below cfg__.chi_threshold
+			WidthGateFailed,         // matched width outside tol_width
+			MatchedPointsLow,        // too few points in the matched window
+			PoseRansacFailed,        // pose-RANSAC stringer plane fit failed
+			YawSanityFailed,         // pre/pose yaw disagreement above threshold
+			_Count
+		};
+
 	protected:
 		using PointT = pcl::PointXYZ;
 		using CloudT = pcl::PointCloud<PointT>;
@@ -64,6 +86,11 @@ class PalletDetector : public PclBaseDetector
 		Eigen::Vector3f   last_ransac_marker_dims__ = Eigen::Vector3f::Zero();
 		Eigen::Vector3f   last_obb_dims__           = Eigen::Vector3f::Zero();
 		int               last_cluster_count__      = 0;
+
+		// Per-cluster rejection counters. Mutable so tryDetectPalletInCluster
+		// can remain const.
+		mutable std::array<size_t, static_cast<size_t>(RejectionReason::_Count)>
+			rejection_counts__ = {};
 
 	public:
 		PalletDetector();
@@ -101,7 +128,22 @@ class PalletDetector : public PclBaseDetector
 		// Number of clusters considered in the most recent detect() call.
 		int getLastClusterCount() const { return last_cluster_count__; }
 
+		// Cluster-level rejection counters (see RejectionReason).
+		static const char * rejectionName(RejectionReason __r);
+		size_t getRejectionCount(RejectionReason __r) const
+		{
+			return rejection_counts__[static_cast<size_t>(__r)];
+		}
+		size_t getTotalAttempts() const;
+		void   resetRejectionCounts() const;
+
 	protected:
+
+		// Helper used inside tryDetectPalletInCluster() at each gate.
+		void recordRejection(RejectionReason __r) const
+		{
+			++rejection_counts__[static_cast<size_t>(__r)];
+		}
 
 		// Per-cluster pipeline: pre-RANSAC -> projection -> template -> width gate ->
 		// pose RANSAC. On success outputs the pose, OBB dims, matched-window cloud,

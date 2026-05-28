@@ -159,7 +159,10 @@ bool PalletDetector::tryDetectPalletInCluster(
 	double & __chi) const
 {
 	if (static_cast<int>(__cluster->size()) < kMinClusterSize)
+	{
+		recordRejection(RejectionReason::ClusterTooSmall);
 		return false;
+	}
 
 	// SOR: drop points whose mean distance to their
 	// K nearest neighbours is more than kSorStddevThresh*sigma above the
@@ -174,14 +177,20 @@ bool PalletDetector::tryDetectPalletInCluster(
 		sor.filter(*cluster_clean);
 	}
 	if (static_cast<int>(cluster_clean->size()) < kMinClusterSize)
+	{
+		recordRejection(RejectionReason::SorTooSmall);
 		return false;
+	}
 
 	// Estimate pallet-face projection axes. If pre-RANSAC can't confidently
 	// identify the face plane (±25 deg of camera Z), reject the cluster outright.
 	bool pre_ransac_rejected = false;
 	const Eigen::Vector3f axis_u = estimateFaceNormalAxisU(cluster_clean, pre_ransac_rejected);
 	if (pre_ransac_rejected)
+	{
+		recordRejection(RejectionReason::PreRansacFailed);
 		return false;
+	}
 	const Eigen::Vector3f axis_v(0.0f, 1.0f, 0.0f); // camera Y 
 
 	// Project + slide template
@@ -190,12 +199,18 @@ bool PalletDetector::tryDetectPalletInCluster(
 	float u_min = 0.f, v_min = 0.f;
 	projectToFaceGrid(cluster_clean, axis_u, axis_v, grid, gcols, grows, u_min, v_min);
 	if (gcols < template_cols__ || grows < template_rows__)
+	{
+		recordRejection(RejectionReason::ProjectionTooSmall);
 		return false;
+	}
 
 	int best_co = 0, best_ro = 0;
 	__chi = slideTemplate(grid, gcols, grows, best_co, best_ro);
 	if (__chi < cfg__.chi_threshold)
+	{
+		recordRejection(RejectionReason::TemplateChiLow);
 		return false;
+	}
 
 	// Width gate on matched window
 	const float cs         = static_cast<float>(cfg__.tpl_cell_size);
@@ -205,7 +220,10 @@ bool PalletDetector::tryDetectPalletInCluster(
 	const float match_y_hi = v_min + (best_ro + template_rows__) * cs;
 	const float matched_W  = match_x_hi - match_x_lo;
 	if (std::abs(matched_W - static_cast<float>(cfg__.pallet_width)) > static_cast<float>(cfg__.tol_width))
+	{
+		recordRejection(RejectionReason::WidthGateFailed);
 		return false;
+	}
 
 	// Extract points falling inside the matched window
 	__matched_pts->clear();
@@ -217,13 +235,19 @@ bool PalletDetector::tryDetectPalletInCluster(
 			__matched_pts->push_back(pt);
 	}
 	if (static_cast<int>(__matched_pts->size()) < kMinMatchedPoints)
+	{
+		recordRejection(RejectionReason::MatchedPointsLow);
 		return false;
+	}
 
 	// Pose: yaw + (x, z) from RANSAC stringer-zone plane fit. No PCA fallback.
 	float face_pos_x = 0.f, face_pos_z = 0.f, yaw = 0.f;
 	if (!computePalletPose(__matched_pts, match_y_lo, match_y_hi,
 	                       __ransac_inliers, face_pos_x, face_pos_z, yaw))
+	{
+		recordRejection(RejectionReason::PoseRansacFailed);
 		return false;
+	}
 
 	// Sanity check: pose-RANSAC's yaw should agree with the pre-RANSAC's implicit yaw
 	// (the angle of axis_u). If they disagree by more than ~8 deg, the two
@@ -231,7 +255,10 @@ bool PalletDetector::tryDetectPalletInCluster(
 	const float pre_yaw  = std::atan2(axis_u.z(), axis_u.x());
 	const float yaw_diff = std::remainder(yaw - pre_yaw, 2.0f * static_cast<float>(M_PI));
 	if (std::abs(yaw_diff) > kMaxPrePoseYawDiffRad)
+	{
+		recordRejection(RejectionReason::YawSanityFailed);
 		return false;
+	}
 
 	const float face_pos_y = 0.5f * (match_y_lo + match_y_hi);
 
@@ -298,7 +325,44 @@ bool PalletDetector::tryDetectPalletInCluster(
 	          << " yaw=" << yaw * 180.0f / static_cast<float>(M_PI) << " deg"
 	          << " inliers=" << __ransac_inliers->size()
 	          << std::endl;
+	recordRejection(RejectionReason::Success);
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Rejection-tracking API
+// ---------------------------------------------------------------------------
+
+const char * PalletDetector::rejectionName(RejectionReason __r)
+{
+	switch (__r)
+	{
+		case RejectionReason::Success:             return "Success";
+		case RejectionReason::ClusterTooSmall:     return "ClusterTooSmall";
+		case RejectionReason::SorTooSmall:         return "SorTooSmall";
+		case RejectionReason::PreRansacFailed:     return "PreRansacFailed";
+		case RejectionReason::ProjectionTooSmall:  return "ProjectionTooSmall";
+		case RejectionReason::TemplateChiLow:      return "TemplateChiLow";
+		case RejectionReason::WidthGateFailed:     return "WidthGateFailed";
+		case RejectionReason::MatchedPointsLow:    return "MatchedPointsLow";
+		case RejectionReason::PoseRansacFailed:    return "PoseRansacFailed";
+		case RejectionReason::YawSanityFailed:     return "YawSanityFailed";
+		case RejectionReason::_Count:              return "?";
+	}
+	return "?";
+}
+
+size_t PalletDetector::getTotalAttempts() const
+{
+	size_t total = 0;
+	for (size_t i = 0; i < static_cast<size_t>(RejectionReason::_Count); ++i)
+		total += rejection_counts__[i];
+	return total;
+}
+
+void PalletDetector::resetRejectionCounts() const
+{
+	rejection_counts__.fill(0);
 }
 
 Eigen::Vector3f PalletDetector::estimateFaceNormalAxisU(

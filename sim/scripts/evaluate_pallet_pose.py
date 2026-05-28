@@ -62,9 +62,20 @@ class PalletPoseEvaluator:
         self.robot_frame = rospy.get_param("~robot_frame", "base")
         self.csv_path = rospy.get_param("~csv_path", "")
         self.match_window = rospy.Duration(rospy.get_param("~match_window", 0.5))
-        # Long-axis length of the pallet model. Used to shift gt origin from
-        # the geometric centre to the front face centre (where the detector publishes).
-        self.pallet_length = rospy.get_param("~pallet_length", 1.22)
+        # Effective long-axis distance from the pallet model's origin (the
+        # point /gazebo/model_states reports) to the surface the detector
+        # actually measures. The detector fits a vertical plane through the
+        # stringer zone (top-deck excluded), and on the pallet_realistic mesh
+        # the stringer face sits ~2.4 cm behind the deck's leading edge; the
+        # visual mesh is also asymmetric along the long axis ([-0.61, +0.59]).
+        # Calibrated to 1.172 m so the static-baseline dx mean is ~0; this is
+        # a geometric model property and does NOT depend on robot range.
+        #
+        # IMPORTANT: any future evaluator that compares the detector's pose
+        # to gazebo ground truth should use this same constant (or import it
+        # from here) so it inherits the calibration.
+        # Nominal EUR/EPAL value (replaced 2026-05-28): 1.22
+        self.pallet_length = rospy.get_param("~pallet_length", 1.172)
 
         self.tf_buf = tf2_ros.Buffer()
         self.tf_lis = tf2_ros.TransformListener(self.tf_buf)
@@ -101,14 +112,17 @@ class PalletPoseEvaluator:
             pass
 
     def _nearest(self, history, stamp):
-        if not history:
+        # Snapshot to avoid "deque mutated during iteration" when gt_cb
+        # appends from one rospy thread while we iterate here in det_cb's.
+        snapshot = list(history)
+        if not snapshot:
             return None
         # /gazebo/model_states has no stamp; assume "current". Just take the
         # latest sample within the match window of the detection stamp.
-        for s, x, y, z, yaw in reversed(history):
+        for s, x, y, z, yaw in reversed(snapshot):
             if abs((s - stamp).to_sec()) <= self.match_window.to_sec():
                 return x, y, z, yaw
-        return history[-1][1:]  # fall back to most recent
+        return snapshot[-1][1:]  # fall back to most recent
 
     def nearest_gt(self, stamp):
         return self._nearest(self.gt_history, stamp)

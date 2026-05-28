@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+    Position-grid envelope sweep. Run alongside the deployment chain so the
+    detector + Gazebo + URDF are already up; this launch only starts the
+    sweep driver, which teleports the robot through a 7x7 grid of spawn
+    poses and writes one CSV row per cell on the fly.
+
+    Workflow:
+      T1: roslaunch deployments deployment_single_robot.launch \
+                site_name:=WalledCubes gazebo_gui:=false
+      T2: roslaunch target_detector sweep_envelope.launch \
+                sweep_csv:=/tmp/sweep1.csv
+          # node exits when the sweep finishes; CSV is written incrementally.
+
+    Then on the host (where matplotlib is installed):
+      docker cp target-detector-sdk:/tmp/sweep1.csv /tmp/
+      python3 ~/target_detector/sim/scripts/plot_envelope_heatmap.py \
+              /tmp/sweep1.csv
+    -->
+
+    <arg name="sweep_csv"      default="/tmp/sweep.csv"/>
+    <arg name="gt_model"       default="pallet"/>
+    <arg name="robot_model"    default="duna"/>
+    <arg name="robot_frame"    default="base"/>
+    <arg name="pallet_x"       default="2.0"/>
+    <arg name="pallet_y"       default="0.0"/>
+    <!-- Constant world yaw the robot holds at every spawn. First sweep =
+         0 deg (parallel to pallet). For the follow-up off-axis sweep run
+         the same launch with e.g. robot_yaw_deg:=10. -->
+    <arg name="robot_yaw_deg"  default="0.0"/>
+    <!-- Per-cell phases:
+         1) settle_time         — fixed wait after teleport (physics).
+         2) wait for the first detection, up to detection_timeout.
+         3) if anything arrived, collect post_first_collect more seconds
+            to gather a few samples for averaging.
+         Successful cells finish in ~settle + small constant; cells
+         outside the envelope time out at detection_timeout. -->
+    <arg name="settle_time"        default="4.0"/>
+    <arg name="detection_timeout"  default="10.0"/>
+    <arg name="post_first_collect" default="2.0"/>
+
+    <node pkg="target_detector" type="sweep_position_grid.py"
+          name="position_grid_sweep" output="screen" required="true">
+        <param name="csv"            value="$(arg sweep_csv)"/>
+        <param name="gt_model"       value="$(arg gt_model)"/>
+        <param name="robot_model"    value="$(arg robot_model)"/>
+        <param name="robot_frame"    value="$(arg robot_frame)"/>
+        <param name="pallet_x"       value="$(arg pallet_x)"/>
+        <param name="pallet_y"       value="$(arg pallet_y)"/>
+        <param name="robot_yaw_deg"  value="$(arg robot_yaw_deg)"/>
+        <param name="settle_time"        value="$(arg settle_time)"/>
+        <param name="detection_timeout"  value="$(arg detection_timeout)"/>
+        <param name="post_first_collect" value="$(arg post_first_collect)"/>
+    </node>
+</launch>
